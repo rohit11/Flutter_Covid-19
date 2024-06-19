@@ -1,6 +1,6 @@
 # covid_19
 
-A new Flutter project.
+A new Flutter Covid-19 project.
 
 ## Getting Started
 
