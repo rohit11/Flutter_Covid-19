@@ -8,15 +8,7 @@
 # Function to update the main version in a package.json file
 update_package_version() {
     local PACKAGE_JSON_PATH=$1
-    local MONTH=$2
-    local DATE=$3
-
-    # Read the current version from the package.json file
-    CURRENT_VERSION=$(jq -r '.version' "$PACKAGE_JSON_PATH")
-
-    # Replace everything after the last '-' with the new suffix
-    BASE_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-.*$//')
-    NEW_VERSION="${BASE_VERSION}-psx-main-${MONTH}-${DATE}"
+    local NEW_VERSION=$2
 
     # Update the version in package.json
     jq --arg newVersion "$NEW_VERSION" '.version = $newVersion' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
@@ -38,12 +30,17 @@ update_dependency_version() {
     echo "Updated dependency $DEP_NAME version to $DEP_VERSION in $PACKAGE_JSON_PATH"
 }
 
-# Function to create a new branch from the development branch
-create_new_branch_from_development() {
+# Function to create a new branch from a specified branch
+create_new_branch_from_specified() {
     local BRANCH_NAME=$1
-    git checkout development || { echo "Failed to switch to development branch."; exit 1; }
-    git checkout -b "$BRANCH_NAME" development || { echo "Failed to create new branch '$BRANCH_NAME'."; exit 1; }
-    echo "Created and switched to new branch '$BRANCH_NAME' from 'development'"
+    local FROM_BRANCH=$2
+    if git show-ref --quiet "refs/heads/$BRANCH_NAME"; then
+        local TIME_SUFFIX=$(date +"%H%M%S")
+        BRANCH_NAME="${BRANCH_NAME}-${TIME_SUFFIX}"
+    fi
+    git checkout "$FROM_BRANCH" || { echo "Failed to switch to branch '$FROM_BRANCH'."; exit 1; }
+    git checkout -b "$BRANCH_NAME" "$FROM_BRANCH" || { echo "Failed to create new branch '$BRANCH_NAME'."; exit 1; }
+    echo "Created and switched to new branch '$BRANCH_NAME' from '$FROM_BRANCH'"
 }
 
 # Function to run yarn install in the specified directory
@@ -116,20 +113,49 @@ DATE=$(date +"%d")
 # Remove leading zero from date, if any
 DATE=$(echo $DATE | sed 's/^0*//')
 
-# Branch name format: psx/{month}-{date}
-BRANCH_NAME="psx/${MONTH}-${DATE}"
+# Default branch name format: psx/{month}-{date}
+DEFAULT_BRANCH_NAME="psx/${MONTH}-${DATE}"
+
+# Prompt to use the default branch name
+read -p "Use default branch name '$DEFAULT_BRANCH_NAME'? [y/N] " USE_DEFAULT_BRANCH
+if [[ "$USE_DEFAULT_BRANCH" =~ ^[Yy]$ ]]; then
+    BRANCH_NAME="$DEFAULT_BRANCH_NAME"
+else
+    read -p "Enter custom branch name: " BRANCH_NAME
+fi
+
+# Prompt to use the default current branch 'development'
+read -p "Create new branch from 'development' branch? [y/N] " USE_DEFAULT_BASE_BRANCH
+if [[ "$USE_DEFAULT_BASE_BRANCH" =~ ^[Yy]$ ]]; then
+    BASE_BRANCH="development"
+else
+    read -p "Enter the branch name to create the new branch from: " BASE_BRANCH
+fi
 
 # Change to root directory
 cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
-# Create a new branch from the development branch
-create_new_branch_from_development "$BRANCH_NAME"
+# Create a new branch from the specified branch
+create_new_branch_from_specified "$BRANCH_NAME" "$BASE_BRANCH"
+
+# Read the current version from the package.json file
+CURRENT_VERSION=$(jq -r '.version' "$PACKAGE_JSON_PATH_ARCADE")
+BASE_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-.*$//')
+DEFAULT_VERSION="${BASE_VERSION}-psx-main-${MONTH}-${DATE}"
+
+# Prompt to use the default version
+read -p "Use default version '$DEFAULT_VERSION'? [y/N] " USE_DEFAULT_VERSION
+if [[ "$USE_DEFAULT_VERSION" =~ ^[Yy]$ ]]; then
+    NEW_VERSION="$DEFAULT_VERSION"
+else
+    read -p "Enter custom version name: " NEW_VERSION
+fi
 
 # Prompt for new dependency version
 read -p "Enter new dependency version for @optum-fpc-psx-mobile-apps/fpcpsxnative: " DEP_VERSION
 
 # Update the main version in packages/arcade/package.json
-update_package_version "$PACKAGE_JSON_PATH_ARCADE" "$MONTH" "$DATE"
+update_package_version "$PACKAGE_JSON_PATH_ARCADE" "$NEW_VERSION"
 
 # Update the dependency version in packages/arcade/package.json
 DEP_NAME="@optum-fpc-psx-mobile-apps/fpcpsxnative"
@@ -151,6 +177,7 @@ commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE"
 push_changes "$BRANCH_NAME"
 
 echo "Script completed successfully."
+
 
 
 
