@@ -3,6 +3,39 @@
 # Sample
 
 ```
+create_new_branch_from_specified() {
+    local BRANCH_NAME=$1
+    local FROM_BRANCH=$2
+
+    # Check if branch already exists locally
+    if git show-ref --quiet "refs/heads/$BRANCH_NAME"; then
+        local TIME_SUFFIX=$(date +"%H%M%S")
+        BRANCH_NAME="${BRANCH_NAME}-${TIME_SUFFIX}"
+    fi
+
+    # Switch to the base branch and update it
+    if ! git checkout "$FROM_BRANCH" > /dev/null 2>&1; then
+        echo "Failed to switch to branch '$FROM_BRANCH'." >&2
+        exit 1
+    fi
+    if ! git pull origin "$FROM_BRANCH" > /dev/null 2>&1; then
+        echo "Failed to pull latest changes from '$FROM_BRANCH'." >&2
+        exit 1
+    fi
+
+    # Create and switch to the new branch
+    if ! git checkout -b "$BRANCH_NAME" > /dev/null 2>&1; then
+        echo "Failed to create and switch to branch '$BRANCH_NAME'." >&2
+        exit 1
+    fi
+
+    # Return the new branch name
+    echo "$BRANCH_NAME"
+}
+
+```
+
+```
 #!/bin/bash
 
 # Function to update the main version in a package.json file
