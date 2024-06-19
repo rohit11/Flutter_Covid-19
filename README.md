@@ -11,7 +11,7 @@ update_package_version() {
     local NEW_VERSION=$2
 
     # Update the version in package.json
-    jq --arg newVersion "$NEW_VERSION" '.version = $newVersion' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
+    jq --arg newVersion "$NEW_VERSION" '.version |= sub("-.*$"; "-psx-main-'$(date +"%B-%d")'")' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
     echo "Updated version to $NEW_VERSION in $PACKAGE_JSON_PATH"
 }
 
@@ -34,13 +34,20 @@ update_dependency_version() {
 create_new_branch_from_specified() {
     local BRANCH_NAME=$1
     local FROM_BRANCH=$2
+
+    # Check if branch already exists
     if git show-ref --quiet "refs/heads/$BRANCH_NAME"; then
         local TIME_SUFFIX=$(date +"%H%M%S")
         BRANCH_NAME="${BRANCH_NAME}-${TIME_SUFFIX}"
     fi
+
+    # Create or switch to the new branch
     git checkout "$FROM_BRANCH" || { echo "Failed to switch to branch '$FROM_BRANCH'."; exit 1; }
     git checkout -b "$BRANCH_NAME" "$FROM_BRANCH" || { echo "Failed to create new branch '$BRANCH_NAME'."; exit 1; }
     echo "Created and switched to new branch '$BRANCH_NAME' from '$FROM_BRANCH'"
+
+    # Return the updated branch name
+    echo "$BRANCH_NAME"
 }
 
 # Function to run yarn install in the specified directory
@@ -136,7 +143,7 @@ fi
 cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
 # Create a new branch from the specified branch
-create_new_branch_from_specified "$BRANCH_NAME" "$BASE_BRANCH"
+BRANCH_NAME=$(create_new_branch_from_specified "$BRANCH_NAME" "$BASE_BRANCH")
 
 # Read the current version from the package.json file
 CURRENT_VERSION=$(jq -r '.version' "$PACKAGE_JSON_PATH_ARCADE")
@@ -177,6 +184,7 @@ commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE"
 push_changes "$BRANCH_NAME"
 
 echo "Script completed successfully."
+
 
 
 
