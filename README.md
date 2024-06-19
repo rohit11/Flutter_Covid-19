@@ -48,16 +48,21 @@ commit_changes() {
     local ROOT_DIR=$1
     local COMMIT_MESSAGE=$2
     cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
-    
-    # Display changes to be committed
-    echo "Changes to be committed:"
-    git status --short packages/arcade/package.json packages/guided-search/package.json yarn.lock
+
+    # Get list of modified files
+    local MODIFIED_FILES=$(git status --porcelain | awk '{print $2}')
+
+    # Display changes for each modified file
+    for file in $MODIFIED_FILES; do
+        echo "Changes in file: $file"
+        git --no-pager diff --cached -- "$file"
+        echo ""
+    done
 
     # Prompt for confirmation
     read -r -p "Are you sure you want to commit these changes? [y/N] " response
     if [[ "$response" =~ ^[Yy]$ ]]; then
-        git add packages/arcade/package.json packages/guided-search/package.json yarn.lock
-        git commit -m "$COMMIT_MESSAGE" || { echo "Failed to commit changes."; exit 1; }
+        git commit -am "$COMMIT_MESSAGE" || { echo "Failed to commit changes."; exit 1; }
         echo "Committed changes to Git with message: $COMMIT_MESSAGE"
     else
         echo "Commit cancelled."
@@ -76,10 +81,10 @@ push_changes() {
 read -p "Enter new version name: " VERSION_NAME
 
 # Prompt for new dependency version
-read -p "Enter new dependency version for @optum-fpc-psx-mobile-app/fpcpsxnative: " DEP_VERSION
+read -p "Enter new dependency version for @optum-fpc-psx-mobile-apps/fpcpsxnative: " DEP_VERSION
 
 # Set root directory path
-ROOT_DIR="$(pwd)/uhh-react-native"
+ROOT_DIR="$(pwd)/uhc-react-native"
 
 # Paths to package.json files relative to the root directory
 PACKAGE_JSON_PATH_ARCADE="$ROOT_DIR/packages/arcade/package.json"
@@ -110,7 +115,7 @@ BRANCH_NAME="psx/${MONTH}-${DATE}"
 update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
 
 # Update the dependency version in the package.json files
-DEP_NAME="@optum-fpc-psx-mobile-app/fpcpsxnative"
+DEP_NAME="@optum-fpc-psx-mobile-apps/fpcpsxnative"
 update_dependency_version "$PACKAGE_JSON_PATH_ARCADE" "$DEP_NAME" "$DEP_VERSION"
 update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
 
@@ -125,5 +130,6 @@ COMMIT_MESSAGE="Update versions and dependencies"
 (push_changes "$BRANCH_NAME")
 
 echo "Script completed successfully."
+
 
 ```
