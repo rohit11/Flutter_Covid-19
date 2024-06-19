@@ -29,17 +29,12 @@ update_dependency_version() {
     echo "Updated dependency $DEP_NAME version to $DEP_VERSION in $PACKAGE_JSON_PATH"
 }
 
-# Function to create or switch to a Git branch
-create_or_switch_git_branch() {
+# Function to create a new branch from the current branch
+create_new_branch_from_current() {
     local BRANCH_NAME=$1
-    # Check if branch exists locally
-    if git show-ref --quiet --verify "refs/heads/$BRANCH_NAME"; then
-        git checkout "$BRANCH_NAME"
-        echo "Switched to existing branch '$BRANCH_NAME'"
-    else
-        git checkout -b "$BRANCH_NAME"
-        echo "Created and switched to new branch '$BRANCH_NAME'"
-    fi
+    local CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    git checkout -b "$BRANCH_NAME" "$CURRENT_BRANCH" 2>/dev/null || git checkout "$BRANCH_NAME"
+    echo "Created and switched to new branch '$BRANCH_NAME' from '$CURRENT_BRANCH'"
 }
 
 # Function to run yarn install in the specified directory
@@ -55,10 +50,11 @@ commit_changes() {
     local COMMIT_MESSAGE=$2
     cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
-    # Get list of modified files
-    local MODIFIED_FILES=$(git status --porcelain | awk '{print $2}')
+    # Add all modified files to staging area
+    git add -A
 
     # Display changes for each modified file
+    local MODIFIED_FILES=$(git diff --cached --name-only)
     for file in $MODIFIED_FILES; do
         echo "Changes in file: $file"
         git --no-pager diff --cached -- "$file"
@@ -68,7 +64,7 @@ commit_changes() {
     # Prompt for confirmation
     read -r -p "Are you sure you want to commit these changes? [y/N] " response
     if [[ "$response" =~ ^[Yy]$ ]]; then
-        git commit -am "$COMMIT_MESSAGE" || { echo "Failed to commit changes."; exit 1; }
+        git commit -m "$COMMIT_MESSAGE" || { echo "Failed to commit changes."; exit 1; }
         echo "Committed changes to Git with message: $COMMIT_MESSAGE"
     else
         echo "Commit cancelled."
@@ -114,8 +110,8 @@ DATE=$(echo $DATE | sed 's/^0*//')
 # Branch name format: psx/{month}-{date}
 BRANCH_NAME="psx/${MONTH}-${DATE}"
 
-# Create or switch to the Git branch
-(create_or_switch_git_branch "$BRANCH_NAME")
+# Create a new branch from the current branch
+(create_new_branch_from_current "$BRANCH_NAME")
 
 # Update the main version in packages/arcade/package.json
 update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
@@ -123,7 +119,7 @@ update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
 # Update the dependency version in the package.json files
 DEP_NAME="@optum-fpc-psx-mobile-apps/fpcpsxnative"
 update_dependency_version "$PACKAGE_JSON_PATH_ARCADE" "$DEP_NAME" "$DEP_VERSION"
-# Update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
+# update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
 
 # Run yarn install at the root directory
 (run_yarn_install "$ROOT_DIR")
@@ -136,6 +132,7 @@ COMMIT_MESSAGE="Update versions and dependencies"
 (push_changes "$BRANCH_NAME")
 
 echo "Script completed successfully."
+
 
 
 ```
