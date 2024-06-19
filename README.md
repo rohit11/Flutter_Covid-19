@@ -29,12 +29,11 @@ update_dependency_version() {
     echo "Updated dependency $DEP_NAME version to $DEP_VERSION in $PACKAGE_JSON_PATH"
 }
 
-# Function to create a new branch from the current branch
-create_new_branch_from_current() {
+# Function to create a new branch from the development branch
+create_new_branch_from_development() {
     local BRANCH_NAME=$1
-    local CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-    git checkout -b "$BRANCH_NAME" "$CURRENT_BRANCH" 2>/dev/null || git checkout "$BRANCH_NAME"
-    echo "Created and switched to new branch '$BRANCH_NAME' from '$CURRENT_BRANCH'"
+    git checkout -b "$BRANCH_NAME" development || { echo "Failed to create new branch '$BRANCH_NAME' from 'development'."; exit 1; }
+    echo "Created and switched to new branch '$BRANCH_NAME' from 'development'"
 }
 
 # Function to run yarn install in the specified directory
@@ -110,8 +109,8 @@ DATE=$(echo $DATE | sed 's/^0*//')
 # Branch name format: psx/{month}-{date}
 BRANCH_NAME="psx/${MONTH}-${DATE}"
 
-# Create a new branch from the current branch
-(create_new_branch_from_current "$BRANCH_NAME")
+# Create a new branch from the development branch
+(create_new_branch_from_development "$BRANCH_NAME")
 
 # Update the main version in packages/arcade/package.json
 update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
@@ -132,6 +131,7 @@ COMMIT_MESSAGE="Update versions and dependencies"
 (push_changes "$BRANCH_NAME")
 
 echo "Script completed successfully."
+
 
 
 
