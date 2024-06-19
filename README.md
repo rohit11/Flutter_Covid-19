@@ -3,22 +3,6 @@
 # Sample
 
 ```
-# Function to push changes to the remote repository
-push_changes() {
-    local BRANCH_NAME=$1
-    local RESPONSE
-
-    read -r -p "Do you want to push branch '$BRANCH_NAME' to the remote repository? [y/N] " RESPONSE
-    if [[ "$RESPONSE" =~ ^[Yy]$ ]]; then
-        git push -u origin "$BRANCH_NAME" || { echo "Failed to push changes to the remote repository."; exit 1; }
-        echo "Pushed changes to the remote repository on branch '$BRANCH_NAME'"
-    else
-        echo "Push cancelled."
-        exit 0
-    fi
-}
-```
-```
 #!/bin/bash
 
 # Function to update the main version in a package.json file
@@ -27,7 +11,7 @@ update_package_version() {
     local NEW_VERSION=$2
 
     # Update the version in package.json
-    jq --arg newVersion "$NEW_VERSION" '.version |= sub("-.*$"; "-psx-main-'$(date +"%B-%d")'")' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
+    jq --arg newVersion "$NEW_VERSION" '.version = $newVersion' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
     echo "Updated version to $NEW_VERSION in $PACKAGE_JSON_PATH"
 }
 
@@ -57,9 +41,15 @@ create_new_branch_from_specified() {
         BRANCH_NAME="${BRANCH_NAME}-${TIME_SUFFIX}"
     fi
 
-    # Create or switch to the new branch
+    # Fetch latest changes from remote
+    git fetch origin || { echo "Failed to fetch latest changes from remote repository."; exit 1; }
+
+    # Switch to the FROM_BRANCH and pull latest changes
     git checkout "$FROM_BRANCH" || { echo "Failed to switch to branch '$FROM_BRANCH'."; exit 1; }
-    git checkout -b "$BRANCH_NAME" "$FROM_BRANCH" || { echo "Failed to create new branch '$BRANCH_NAME'."; exit 1; }
+    git pull origin "$FROM_BRANCH" || { echo "Failed to pull latest changes from remote '$FROM_BRANCH'."; exit 1; }
+
+    # Create or switch to the new branch
+    git checkout -b "$BRANCH_NAME" || { echo "Failed to create new branch '$BRANCH_NAME'."; exit 1; }
     echo "Created and switched to new branch '$BRANCH_NAME' from '$FROM_BRANCH'"
 
     # Return the updated branch name
@@ -110,8 +100,16 @@ commit_changes() {
 # Function to push changes to the remote repository
 push_changes() {
     local BRANCH_NAME=$1
-    git push -u origin "$BRANCH_NAME" || { echo "Failed to push changes to the remote repository."; exit 1; }
-    echo "Pushed changes to the remote repository on branch '$BRANCH_NAME'"
+    local RESPONSE
+
+    read -r -p "Do you want to push branch '$BRANCH_NAME' to the remote repository? [y/N] " RESPONSE
+    if [[ "$RESPONSE" =~ ^[Yy]$ ]]; then
+        git push -u origin "$BRANCH_NAME" || { echo "Failed to push changes to the remote repository."; exit 1; }
+        echo "Pushed changes to the remote repository on branch '$BRANCH_NAME'"
+    else
+        echo "Push cancelled."
+        exit 0
+    fi
 }
 
 # Set root directory path
@@ -200,6 +198,7 @@ commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE"
 push_changes "$BRANCH_NAME"
 
 echo "Script completed successfully."
+
 
 
 
