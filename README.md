@@ -29,11 +29,17 @@ update_dependency_version() {
     echo "Updated dependency $DEP_NAME version to $DEP_VERSION in $PACKAGE_JSON_PATH"
 }
 
-# Function to create a new branch
-create_git_branch() {
+# Function to create or switch to a Git branch
+create_or_switch_git_branch() {
     local BRANCH_NAME=$1
-    git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
-    echo "Created or switched to branch '$BRANCH_NAME' locally."
+    # Check if branch exists locally
+    if git show-ref --quiet --verify "refs/heads/$BRANCH_NAME"; then
+        git checkout "$BRANCH_NAME"
+        echo "Switched to existing branch '$BRANCH_NAME'"
+    else
+        git checkout -b "$BRANCH_NAME"
+        echo "Created and switched to new branch '$BRANCH_NAME'"
+    fi
 }
 
 # Function to run yarn install in the specified directory
@@ -108,8 +114,8 @@ DATE=$(echo $DATE | sed 's/^0*//')
 # Branch name format: psx/{month}-{date}
 BRANCH_NAME="psx/${MONTH}-${DATE}"
 
-# Create a new branch with automatic name
-(create_git_branch "$BRANCH_NAME")
+# Create or switch to the Git branch
+(create_or_switch_git_branch "$BRANCH_NAME")
 
 # Update the main version in packages/arcade/package.json
 update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
@@ -117,7 +123,7 @@ update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
 # Update the dependency version in the package.json files
 DEP_NAME="@optum-fpc-psx-mobile-apps/fpcpsxnative"
 update_dependency_version "$PACKAGE_JSON_PATH_ARCADE" "$DEP_NAME" "$DEP_VERSION"
-update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
+# Update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
 
 # Run yarn install at the root directory
 (run_yarn_install "$ROOT_DIR")
