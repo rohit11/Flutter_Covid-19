@@ -14,7 +14,6 @@ update_package_version() {
 }
 
 # Function to update a specific dependency version in a package.json file
-# Function to update a specific dependency version in a package.json file
 update_dependency_version() {
     local PACKAGE_JSON_PATH=$1
     local DEP_NAME=$2
@@ -44,8 +43,43 @@ run_yarn_install() {
     echo "Installed dependencies in $ROOT_DIR"
 }
 
-# Prompt for root directory path
-read -p "Enter the root directory path of the project: " ROOT_DIR
+# Function to commit changes to Git
+commit_changes() {
+    local ROOT_DIR=$1
+    local COMMIT_MESSAGE=$2
+    cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
+    
+    # Display changes to be committed
+    echo "Changes to be committed:"
+    git status --short packages/arcade/package.json packages/guided-search/package.json yarn.lock
+
+    # Prompt for confirmation
+    read -r -p "Are you sure you want to commit these changes? [y/N] " response
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+        git add packages/arcade/package.json packages/guided-search/package.json yarn.lock
+        git commit -m "$COMMIT_MESSAGE" || { echo "Failed to commit changes."; exit 1; }
+        echo "Committed changes to Git with message: $COMMIT_MESSAGE"
+    else
+        echo "Commit cancelled."
+        exit 0
+    fi
+}
+
+# Function to push changes to the remote repository
+push_changes() {
+    local BRANCH_NAME=$1
+    git push -u origin "$BRANCH_NAME" || { echo "Failed to push changes to the remote repository."; exit 1; }
+    echo "Pushed changes to the remote repository on branch '$BRANCH_NAME'"
+}
+
+# Prompt for new version name
+read -p "Enter new version name: " VERSION_NAME
+
+# Prompt for new dependency version
+read -p "Enter new dependency version for @optum-fpc-psx-mobile-app/fpcpsxnative: " DEP_VERSION
+
+# Set root directory path
+ROOT_DIR="$(pwd)/uhh-react-native"
 
 # Paths to package.json files relative to the root directory
 PACKAGE_JSON_PATH_ARCADE="$ROOT_DIR/packages/arcade/package.json"
@@ -70,13 +104,7 @@ DATE=$(echo $DATE | sed 's/^0*//')
 BRANCH_NAME="psx/${MONTH}-${DATE}"
 
 # Create a new branch with automatic name
-(cd "$ROOT_DIR" && create_git_branch "$BRANCH_NAME")
-
-# Prompt for new version name
-read -p "Enter new version name: " VERSION_NAME
-
-# Prompt for new dependency version
-read -p "Enter new dependency version for @optum-fpc-psx-mobile-app/fpcpsxnative: " DEP_VERSION
+(create_git_branch "$BRANCH_NAME")
 
 # Update the main version in packages/arcade/package.json
 update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
@@ -87,5 +115,15 @@ update_dependency_version "$PACKAGE_JSON_PATH_ARCADE" "$DEP_NAME" "$DEP_VERSION"
 update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
 
 # Run yarn install at the root directory
-run_yarn_install "$ROOT_DIR"
+(run_yarn_install "$ROOT_DIR")
+
+# Commit changes to Git
+COMMIT_MESSAGE="Update versions and dependencies"
+(commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE")
+
+# Push changes to the remote repository
+(push_changes "$BRANCH_NAME")
+
+echo "Script completed successfully."
+
 ```
