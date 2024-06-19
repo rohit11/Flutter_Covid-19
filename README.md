@@ -3,6 +3,22 @@
 # Sample
 
 ```
+# Function to push changes to the remote repository
+push_changes() {
+    local BRANCH_NAME=$1
+    local RESPONSE
+
+    read -r -p "Do you want to push branch '$BRANCH_NAME' to the remote repository? [y/N] " RESPONSE
+    if [[ "$RESPONSE" =~ ^[Yy]$ ]]; then
+        git push -u origin "$BRANCH_NAME" || { echo "Failed to push changes to the remote repository."; exit 1; }
+        echo "Pushed changes to the remote repository on branch '$BRANCH_NAME'"
+    else
+        echo "Push cancelled."
+        exit 0
+    fi
+}
+```
+```
 #!/bin/bash
 
 # Function to update the main version in a package.json file
