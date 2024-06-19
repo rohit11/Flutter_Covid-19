@@ -14,16 +14,18 @@ update_package_version() {
 }
 
 # Function to update a specific dependency version in a package.json file
+# Function to update a specific dependency version in a package.json file
 update_dependency_version() {
     local PACKAGE_JSON_PATH=$1
     local DEP_NAME=$2
     local DEP_VERSION=$3
     jq --arg depVersion "$DEP_VERSION" --arg depName "$DEP_NAME" '
-        if .dependencies[$depName] then
-            .dependencies[$depName] = $depVersion
-        else
-            .dependencies += {($depName): $depVersion}
-        end
+        .dependencies |=
+            if has($depName) then
+                .[$depName] = $depVersion
+            else
+                . + {($depName): $depVersion}
+            end
     ' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
     echo "Updated dependency $DEP_NAME version to $DEP_VERSION in $PACKAGE_JSON_PATH"
 }
