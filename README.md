@@ -7,10 +7,20 @@
 
 # Function to update the main version in a package.json file
 update_package_version() {
-    local VERSION_NAME=$1
-    local PACKAGE_JSON_PATH=$2
-    jq --arg newVersion "$VERSION_NAME" '.version = $newVersion' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
-    echo "Updated version to $VERSION_NAME in $PACKAGE_JSON_PATH"
+    local PACKAGE_JSON_PATH=$1
+    local MONTH=$2
+    local DATE=$3
+
+    # Read the current version from the package.json file
+    CURRENT_VERSION=$(jq -r '.version' "$PACKAGE_JSON_PATH")
+
+    # Replace everything after the last '-' with the new suffix
+    BASE_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-.*$//')
+    NEW_VERSION="${BASE_VERSION}-psx-main-${MONTH}-${DATE}"
+
+    # Update the version in package.json
+    jq --arg newVersion "$NEW_VERSION" '.version = $newVersion' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
+    echo "Updated version to $NEW_VERSION in $PACKAGE_JSON_PATH"
 }
 
 # Function to update a specific dependency version in a package.json file
@@ -19,12 +29,11 @@ update_dependency_version() {
     local DEP_NAME=$2
     local DEP_VERSION=$3
     jq --arg depVersion "$DEP_VERSION" --arg depName "$DEP_NAME" '
-        .dependencies |=
-            if has($depName) then
-                .[$depName] = $depVersion
-            else
-                . + {($depName): $depVersion}
-            end
+        if .dependencies[$depName] then
+            .dependencies[$depName] = $depVersion
+        else
+            .dependencies += {($depName): $depVersion}
+        end
     ' "$PACKAGE_JSON_PATH" > temp.json && mv temp.json "$PACKAGE_JSON_PATH"
     echo "Updated dependency $DEP_NAME version to $DEP_VERSION in $PACKAGE_JSON_PATH"
 }
@@ -32,7 +41,8 @@ update_dependency_version() {
 # Function to create a new branch from the development branch
 create_new_branch_from_development() {
     local BRANCH_NAME=$1
-    git checkout -b "$BRANCH_NAME" development || { echo "Failed to create new branch '$BRANCH_NAME' from 'development'."; exit 1; }
+    git checkout development || { echo "Failed to switch to development branch."; exit 1; }
+    git checkout -b "$BRANCH_NAME" development || { echo "Failed to create new branch '$BRANCH_NAME'."; exit 1; }
     echo "Created and switched to new branch '$BRANCH_NAME' from 'development'"
 }
 
@@ -54,8 +64,14 @@ commit_changes() {
 
     # Display changes for each modified file
     local MODIFIED_FILES=$(git diff --cached --name-only)
+    if [ -z "$MODIFIED_FILES" ]; then
+        echo "No changes to commit."
+        return
+    fi
+
+    echo "Modified files:"
     for file in $MODIFIED_FILES; do
-        echo "Changes in file: $file"
+        echo "File: $file"
         git --no-pager diff --cached -- "$file"
         echo ""
     done
@@ -77,12 +93,6 @@ push_changes() {
     git push -u origin "$BRANCH_NAME" || { echo "Failed to push changes to the remote repository."; exit 1; }
     echo "Pushed changes to the remote repository on branch '$BRANCH_NAME'"
 }
-
-# Prompt for new version name
-read -p "Enter new version name: " VERSION_NAME
-
-# Prompt for new dependency version
-read -p "Enter new dependency version for @optum-fpc-psx-mobile-apps/fpcpsxnative: " DEP_VERSION
 
 # Set root directory path
 ROOT_DIR="$(pwd)/uhc-react-native"
@@ -109,28 +119,39 @@ DATE=$(echo $DATE | sed 's/^0*//')
 # Branch name format: psx/{month}-{date}
 BRANCH_NAME="psx/${MONTH}-${DATE}"
 
+# Change to root directory
+cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
+
 # Create a new branch from the development branch
-(create_new_branch_from_development "$BRANCH_NAME")
+create_new_branch_from_development "$BRANCH_NAME"
+
+# Prompt for new dependency version
+read -p "Enter new dependency version for @optum-fpc-psx-mobile-apps/fpcpsxnative: " DEP_VERSION
 
 # Update the main version in packages/arcade/package.json
-update_package_version "$VERSION_NAME" "$PACKAGE_JSON_PATH_ARCADE"
+update_package_version "$PACKAGE_JSON_PATH_ARCADE" "$MONTH" "$DATE"
 
-# Update the dependency version in the package.json files
+# Update the dependency version in packages/arcade/package.json
 DEP_NAME="@optum-fpc-psx-mobile-apps/fpcpsxnative"
 update_dependency_version "$PACKAGE_JSON_PATH_ARCADE" "$DEP_NAME" "$DEP_VERSION"
-# update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
+
+# Update the dependency version in packages/guided-search/package.json
+update_dependency_version "$PACKAGE_JSON_PATH_GUIDED_SEARCH" "$DEP_NAME" "$DEP_VERSION"
 
 # Run yarn install at the root directory
-(run_yarn_install "$ROOT_DIR")
+run_yarn_install "$ROOT_DIR"
+
+# Prompt for commit message
+read -p "Enter commit message: " COMMIT_MESSAGE
 
 # Commit changes to Git
-COMMIT_MESSAGE="Update versions and dependencies"
-(commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE")
+commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE"
 
 # Push changes to the remote repository
-(push_changes "$BRANCH_NAME")
+push_changes "$BRANCH_NAME"
 
 echo "Script completed successfully."
+
 
 
 
