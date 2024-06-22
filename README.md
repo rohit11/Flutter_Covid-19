@@ -3,39 +3,6 @@
 # Sample
 
 ```
-create_new_branch_from_specified() {
-    local BRANCH_NAME=$1
-    local FROM_BRANCH=$2
-
-    # Check if branch already exists locally
-    if git show-ref --quiet "refs/heads/$BRANCH_NAME"; then
-        local TIME_SUFFIX=$(date +"%H%M%S")
-        BRANCH_NAME="${BRANCH_NAME}-${TIME_SUFFIX}"
-    fi
-
-    # Switch to the base branch and update it
-    if ! git checkout "$FROM_BRANCH" > /dev/null 2>&1; then
-        echo "Failed to switch to branch '$FROM_BRANCH'." >&2
-        exit 1
-    fi
-    if ! git pull origin "$FROM_BRANCH" > /dev/null 2>&1; then
-        echo "Failed to pull latest changes from '$FROM_BRANCH'." >&2
-        exit 1
-    fi
-
-    # Create and switch to the new branch
-    if ! git checkout -b "$BRANCH_NAME" > /dev/null 2>&1; then
-        echo "Failed to create and switch to branch '$BRANCH_NAME'." >&2
-        exit 1
-    fi
-
-    # Return the new branch name
-    echo "$BRANCH_NAME"
-}
-
-```
-
-```
 #!/bin/bash
 
 # Function to update the main version in a package.json file
@@ -68,24 +35,29 @@ create_new_branch_from_specified() {
     local BRANCH_NAME=$1
     local FROM_BRANCH=$2
 
-    # Check if branch already exists
+    # Check if branch already exists locally
     if git show-ref --quiet "refs/heads/$BRANCH_NAME"; then
         local TIME_SUFFIX=$(date +"%H%M%S")
         BRANCH_NAME="${BRANCH_NAME}-${TIME_SUFFIX}"
     fi
 
-    # Fetch latest changes from remote
-    git fetch origin || { echo "Failed to fetch latest changes from remote repository."; exit 1; }
+    # Switch to the base branch and update it
+    if ! git checkout "$FROM_BRANCH" > /dev/null 2>&1; then
+        echo "Failed to switch to branch '$FROM_BRANCH'." >&2
+        exit 1
+    fi
+    if ! git pull origin "$FROM_BRANCH" > /dev/null 2>&1; then
+        echo "Failed to pull latest changes from '$FROM_BRANCH'." >&2
+        exit 1
+    fi
 
-    # Switch to the FROM_BRANCH and pull latest changes
-    git checkout "$FROM_BRANCH" || { echo "Failed to switch to branch '$FROM_BRANCH'."; exit 1; }
-    git pull origin "$FROM_BRANCH" || { echo "Failed to pull latest changes from remote '$FROM_BRANCH'."; exit 1; }
+    # Create and switch to the new branch
+    if ! git checkout -b "$BRANCH_NAME" > /dev/null 2>&1; then
+        echo "Failed to create and switch to branch '$BRANCH_NAME'." >&2
+        exit 1
+    fi
 
-    # Create or switch to the new branch
-    git checkout -b "$BRANCH_NAME" || { echo "Failed to create new branch '$BRANCH_NAME'."; exit 1; }
-    echo "Created and switched to new branch '$BRANCH_NAME' from '$FROM_BRANCH'"
-
-    # Return the updated branch name
+    # Return the new branch name
     echo "$BRANCH_NAME"
 }
 
@@ -102,11 +74,8 @@ commit_changes() {
     local COMMIT_MESSAGE=$2
     cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
-    # Add all modified files to staging area
-    git add -A
-
-    # Display changes for each modified file
-    local MODIFIED_FILES=$(git diff --cached --name-only)
+    # Display changes for each modified file and prompt user to add or skip
+    local MODIFIED_FILES=$(git ls-files --modified --deleted --others)
     if [ -z "$MODIFIED_FILES" ]; then
         echo "No changes to commit."
         return
@@ -115,18 +84,26 @@ commit_changes() {
     echo "Modified files:"
     for file in $MODIFIED_FILES; do
         echo "File: $file"
-        git --no-pager diff --cached -- "$file"
+        git --no-pager diff -- "$file"
         echo ""
+
+        # Prompt for each file to add it to the staging area or not
+        read -r -p "Do you want to stage this file for commit? [y/N] " response
+        if [[ "$response" =~ ^[Yy]$ ]]; then
+            git add "$file"
+            echo "Added $file to staging area."
+        else
+            echo "Skipped $file."
+        fi
     done
 
-    # Prompt for confirmation
-    read -r -p "Are you sure you want to commit these changes? [y/N] " response
-    if [[ "$response" =~ ^[Yy]$ ]]; then
+    # Commit if any files are staged
+    if git diff --cached --quiet; then
+        echo "No files staged for commit. Exiting."
+        return
+    else
         git commit -m "$COMMIT_MESSAGE" || { echo "Failed to commit changes."; exit 1; }
         echo "Committed changes to Git with message: $COMMIT_MESSAGE"
-    else
-        echo "Commit cancelled."
-        exit 0
     fi
 }
 
@@ -167,7 +144,7 @@ DATE=$(date +"%d")
 # Remove leading zero from date, if any
 DATE=$(echo $DATE | sed 's/^0*//')
 
-# Default branch name format: psx/{month}-{date}
+# Default branch name format: psx/${MONTH}-${DATE}
 DEFAULT_BRANCH_NAME="psx/${MONTH}-${DATE}"
 
 # Prompt to use the default branch name
@@ -191,6 +168,7 @@ cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
 # Create a new branch from the specified branch
 BRANCH_NAME=$(create_new_branch_from_specified "$BRANCH_NAME" "$BASE_BRANCH")
+echo "Branch created: $BRANCH_NAME" # For debugging
 
 # Read the current version from the package.json file
 CURRENT_VERSION=$(jq -r '.version' "$PACKAGE_JSON_PATH_ARCADE")
@@ -231,13 +209,5 @@ commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE"
 push_changes "$BRANCH_NAME"
 
 echo "Script completed successfully."
-
-
-
-
-
-
-
-
 
 ```
