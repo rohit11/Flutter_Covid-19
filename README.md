@@ -155,19 +155,11 @@ else
     read -p "Enter custom branch name: " BRANCH_NAME
 fi
 
-# Prompt to use the default current branch 'development'
-read -p "Create new branch from 'development' branch? [y/N] " USE_DEFAULT_BASE_BRANCH
-if [[ "$USE_DEFAULT_BASE_BRANCH" =~ ^[Yy]$ ]]; then
-    BASE_BRANCH="development"
-else
-    read -p "Enter the branch name to create the new branch from: " BASE_BRANCH
-fi
-
 # Change to root directory
 cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
-# Create a new branch from the specified branch
-BRANCH_NAME=$(create_new_branch_from_specified "$BRANCH_NAME" "$BASE_BRANCH")
+# Create a new branch from the development branch
+BRANCH_NAME=$(create_new_branch_from_specified "$BRANCH_NAME" "development")
 echo "Branch created: $BRANCH_NAME" # For debugging
 
 # Read the current version from the package.json file
@@ -209,5 +201,6 @@ commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE"
 push_changes "$BRANCH_NAME"
 
 echo "Script completed successfully."
+
 
 ```
