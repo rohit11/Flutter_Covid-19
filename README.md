@@ -9,17 +9,8 @@ FOLDER_PATH=''  # Leave empty if no additional folder path is needed
 # Full URL to the folder
 FULL_URL="$ARTIFACTORY_URL/$REPO/$FOLDER_PATH"
 
-# Fetch HTML content from the repository URL
-html_content=$(curl -s "$FULL_URL")
-
-# Check if HTML content is empty
-if [ -z "$html_content" ]; then
-  echo "Error: Failed to retrieve HTML content from $FULL_URL"
-  exit 1
-fi
-
-# Extract .tgz files and their associated metadata (Last-Modified and size)
-files_and_metadata=$(echo "$html_content" | grep -o '<a href="[^"]*\.tgz"[^>]*>[^<]*</a>[^<]*')
+# Fetch HTML content from the repository URL and extract .tgz files
+files_and_metadata=$(curl -s "$FULL_URL" | grep -o '<a href="[^"]*\.tgz"[^>]*>[^<]*</a>[^<]*')
 
 # Variables to store the latest file and date
 latest_file=""
@@ -58,5 +49,6 @@ if [ -n "$latest_file" ]; then
 else
   echo "No recent .tgz files found."
 fi
+
 
 ```
