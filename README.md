@@ -1,9 +1,25 @@
 ```
+#!/bin/bash
+
+# Replace these variables with your own values
+ARTIFACTORY_URL='https://repo1.uhc.com/artifactory'
+REPO='npm-local/@optum-fpc/fpc/-/@optum-fpc'
+FOLDER_PATH=''  # Leave empty if no additional folder path is needed
+
 # Full URL to the folder
 FULL_URL="$ARTIFACTORY_URL/$REPO/$FOLDER_PATH"
 
-# Get the list of .tgz files from the HTML page
-files=$(curl -s "$FULL_URL" | grep -o '<a href="[^"]*\.tgz"' | sed -e 's/<a href="//' -e 's/"//')
+# Fetch HTML content from the repository URL
+html_content=$(curl -s "$FULL_URL")
+
+# Check if HTML content is empty
+if [ -z "$html_content" ]; then
+  echo "Error: Failed to retrieve HTML content from $FULL_URL"
+  exit 1
+fi
+
+# Extract .tgz files and their Last-Modified dates directly from HTML content
+files_and_dates=$(echo "$html_content" | grep -o '<a href="[^"]*\.tgz"[^>]*>[^<]*</a>' | sed -e 's/<a href="//' -e 's/">.*//')
 
 # Calculate current date in Unix timestamp
 current_date=$(date "+%s")
@@ -15,49 +31,31 @@ one_day_ago=$(date -v -1d "+%s" 2>/dev/null || date -d '1 day ago' "+%s" 2>/dev/
 latest_file=""
 latest_date=0
 
-# Function to parse Last-Modified date into Unix timestamp
-parse_last_modified() {
-  local file_url="$1"
-  local last_modified
-  last_modified=$(curl -sI "$file_url" | grep -i 'last-modified' | sed 's/Last-Modified: //I')
-  
-  if [ -z "$last_modified" ]; then
-    echo "Warning: Failed to retrieve Last-Modified date for file $file_url"
-    return 1
-  fi
-  
-  local file_date
-  file_date=$(date -jf "%a, %d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
-  
-  if [ -z "$file_date" ]; then
-    echo "Warning: Failed to parse Last-Modified date for file $file_url"
-    return 1
-  fi
-  
-  echo "$file_date"
-}
+# Process each file and its Last-Modified date
+while read -r line; do
+  # Extract filename and Last-Modified date
+  filename=$(echo "$line" | grep -o '[^/]*\.tgz')
+  last_modified=$(echo "$line" | sed -e 's/.*>\([^<]*\)<\/a>/\1/' | grep -o '[^,]*$')
 
-# Process each file extracted from html_page
-for file in $files; do
-  # Construct full URL for the file
-  file_url="$FULL_URL/$file"
-
-  # Get the Last-Modified date of the file
-  file_date=$(parse_last_modified "$file_url")
-
-  if [ $? -ne 0 ]; then
-    continue
-  fi
-
-  # Only consider files modified within the last 24 hours
-  if [ "$file_date" -ge "$one_day_ago" ] && [ "$file_date" -le "$current_date" ]; then
-    # Compare and find the latest file
-    if [ "$file_date" -gt "$latest_date" ]; then
-      latest_date=$file_date
-      latest_file=$file
+  if [ -n "$filename" ] && [ -n "$last_modified" ]; then
+    # Parse Last-Modified date into Unix timestamp
+    file_date=$(date -jf "%d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
+    
+    if [ -z "$file_date" ]; then
+      echo "Warning: Failed to parse Last-Modified date for file $filename"
+      continue
+    fi
+    
+    # Only consider files modified within the last 24 hours
+    if [ "$file_date" -ge "$one_day_ago" ] && [ "$file_date" -le "$current_date" ]; then
+      # Compare and find the latest file
+      if [ "$file_date" -gt "$latest_date" ]; then
+        latest_date=$file_date
+        latest_file=$filename
+      fi
     fi
   fi
-done
+done <<< "$files_and_dates"
 
 if [ -n "$latest_file" ]; then
   # Strip the prefix and suffix from the latest file name
@@ -66,4 +64,5 @@ if [ -n "$latest_file" ]; then
 else
   echo "No recent .tgz files found."
 fi
+
 ```
