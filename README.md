@@ -45,16 +45,15 @@ while read -r line; do
     # Compare and find the latest file
     if [ "$file_date" -gt "$latest_date" ]; then
       latest_date=$file_date
-      latest_file=$filename
+      latest_file=$version  # Store just the version number
     fi
   fi
 done <<< "$files_and_metadata"
 
 if [ -n "$latest_file" ]; then
-  # Extract version from latest_file
-  version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
-  echo "The latest version is: $version"
+  echo "The latest version is: $latest_file"
 else
   echo "No recent .tgz files found."
 fi
+
 ```
