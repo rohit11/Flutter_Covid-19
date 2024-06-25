@@ -1,5 +1,5 @@
 ```
-# Function to fetch the latest version of @optum-fpc-psx-mobile-apps/fpcpsxnative from Artifactory
+# Function to fetch the latest version of a package from Artifactory
 fetch_latest_package_version() {
     local ARTIFACTORY_URL='https://repo1.uhc.com/artifactory'
     local REPO='npm-local/@optum-fpc/fpc/-/@optum-fpc'
@@ -49,6 +49,28 @@ fetch_latest_package_version() {
         echo ""
     fi
 }
+
+# Fetch the latest version automatically
+DEP_VERSION=$(fetch_latest_package_version)
+
+# Prompt to use or enter the dependency version
+read -p "Do you want to use the latest version of @optum-fpc-psx-mobile-apps/fpcpsxnative from Artifactory? [Y/n] " USE_LATEST_VERSION
+
+if [[ "$USE_LATEST_VERSION" =~ ^[Yy]$ ]] || [[ -z "$USE_LATEST_VERSION" ]]; then
+    if [ -z "$DEP_VERSION" ]; then
+        echo "Failed to fetch the latest version from Artifactory. Please enter the version manually."
+        read -p "Enter new dependency version for @optum-fpc-psx-mobile-apps/fpcpsxnative: " DEP_VERSION
+    else
+        echo "Automatically detected latest version: $DEP_VERSION"
+    fi
+else
+    # Manual entry of version
+    read -p "Enter new dependency version for @optum-fpc-psx-mobile-apps/fpcpsxnative: " DEP_VERSION
+fi
+
+echo "Selected dependency version: $DEP_VERSION"
+
+# Continue with your script logic using $DEP_VERSION
 ```
 
 ```
