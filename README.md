@@ -22,7 +22,7 @@ files=$(echo "$html_page" | awk -F '"' '/href="[^"]*\.tgz"/{print $2}')
 current_date=$(date "+%s")
 
 # Start of last 1 day in Unix timestamp (24 hours ago)
-one_day_ago=$(date -v -1d "+%s")
+one_day_ago=$(date -v -1d "+%s" 2>/dev/null || date -d '1 day ago' "+%s" 2>/dev/null)
 
 # Variables to store the latest file and date
 latest_file=""
@@ -38,10 +38,10 @@ while read -r line; do
     file_url="$FULL_URL/$filename"
 
     # Get the Last-Modified date of the file directly from the html_page
-    last_modified=$(echo "$html_page" | grep -oP "$filename\".*Last-Modified: \K.*" | head -n 1)
+    last_modified=$(echo "$html_page" | grep -o "$filename\".*Last-Modified: \K.*" | head -n 1)
 
     # Parse Last-Modified date into Unix timestamp
-    file_date=$(date -jf "%a, %d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
+    file_date=$(date -j -f "%a, %d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
 
     # Check if file_date is a valid integer
     if ! [[ $file_date =~ ^[0-9]+$ ]]; then
