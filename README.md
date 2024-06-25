@@ -22,6 +22,23 @@ if [ -z "$html_page" ]; then
   exit 1
 fi
 
+# Function to parse Last-Modified date into Unix timestamp
+parse_last_modified_date() {
+  local last_modified="$1"
+  local file_date
+
+  # Check if running on macOS (BSD) or Linux
+  if [[ $(uname) == "Darwin" ]]; then
+    # macOS (BSD)
+    file_date=$(date -jf "%a, %d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null)
+  else
+    # Linux
+    file_date=$(date -d "$last_modified" "+%s" 2>/dev/null)
+  fi
+
+  echo "$file_date"
+}
+
 # Extract .tgz files and their modification dates
 latest_file=""
 latest_date=0
@@ -35,11 +52,11 @@ while read -r line; do
     # Construct full URL for the file
     file_url="$FULL_URL/$filename"
 
-    # Get the Last-Modified date of the file (using awk to parse the date)
+    # Get the Last-Modified date of the file
     last_modified=$(curl -sI "$file_url" | awk -F': ' '/Last-Modified/ { print $2 }')
 
-    # Convert date to Unix timestamp
-    file_date=$(date -d "$last_modified" "+%s" 2>/dev/null)
+    # Parse Last-Modified date into Unix timestamp
+    file_date=$(parse_last_modified_date "$last_modified")
 
     # Check if file_date is a valid integer
     if ! [[ $file_date =~ ^[0-9]+$ ]]; then
@@ -62,7 +79,6 @@ if [ -n "$latest_file" ]; then
 else
   echo "No .tgz files found."
 fi
-
 
 ```
 ```
