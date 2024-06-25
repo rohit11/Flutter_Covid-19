@@ -3,50 +3,7 @@
 # Sample
 
 ```
-#!/bin/bash
 
-# Replace these variables with your own values
-ARTIFACTORY_URL='https://repo1.uhc.com/artifactory'
-REPO='npm-local/@optum-fpc/fpc/-/@optum-fpc'
-FOLDER_PATH=''  # Leave empty if no additional folder path is needed
-
-# Full URL to the folder
-FULL_URL="$ARTIFACTORY_URL/$REPO/$FOLDER_PATH"
-
-# Get the list of files (HTML page)
-html_page=$(curl -s "$FULL_URL")
-
-# Extract .tgz files and their modification dates
-latest_file=""
-latest_date=0
-
-# Process each line from the HTML page to extract .tgz file links
-echo "$html_page" | grep -oP 'href="\K[^"]+\.tgz' | while read -r filename; do
-  if [ -n "$filename" ]; then
-    # Construct full URL for the file
-    file_url="$FULL_URL/$filename"
-    
-    # Get the Last-Modified date of the file
-    last_modified=$(curl -sI "$file_url" | grep -i 'last-modified' | cut -d' ' -f2-)
-    
-    # Convert date to Unix timestamp
-    file_date=$(date -d "$last_modified" +%s)
-    
-    # Compare and find the latest file
-    if [ "$file_date" -gt "$latest_date" ]; then
-      latest_date=$file_date
-      latest_file=$filename
-    fi
-  fi
-done
-
-if [ -n "$latest_file" ]; then
-  # Strip the prefix and suffix from the latest file name
-  version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
-  echo "The latest version is: $version"
-else
-  echo "No .tgz files found."
-fi
 
 ```
 ```
