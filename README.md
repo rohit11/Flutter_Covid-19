@@ -16,13 +16,13 @@ if [ -z "$html_page" ]; then
 fi
 
 # Extract .tgz files and their modification dates directly from html_page
-files=$(echo "$html_page" | grep -o '<a href="[^"]*\.tgz"')
+files=$(echo "$html_page" | awk -F '"' '/href="[^"]*\.tgz"/{print $2}')
 
 # Calculate current date in Unix timestamp
 current_date=$(date "+%s")
 
 # Start of last 1 day in Unix timestamp (24 hours ago)
-one_day_ago=$(date -d '1 day ago' "+%s")
+one_day_ago=$(date -v -1d "+%s")
 
 # Variables to store the latest file and date
 latest_file=""
