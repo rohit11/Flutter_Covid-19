@@ -1,6 +1,8 @@
 ```
 #!/bin/bash
 
+#!/bin/bash
+
 # Replace these variables with your own values
 ARTIFACTORY_URL='https://repo1.uhc.com/artifactory'
 REPO='npm-local/@optum-fpc/fpc/-/@optum-fpc'
@@ -55,5 +57,6 @@ if [ -n "$latest_file" ]; then
 else
   echo "No recent .tgz files found."
 fi
+
 
 ```
