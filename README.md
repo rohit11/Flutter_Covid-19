@@ -27,7 +27,7 @@ while read -r line; do
   
   if [ -n "$filename" ] && [ -n "$last_modified" ]; then
     # Parse Last-Modified date into Unix timestamp
-    file_date=$(date -jf "%d-%b-%Y %H:%M" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
+    file_date=$(date -d "$last_modified" "+%s" 2>/dev/null)
     
     if [ -z "$file_date" ]; then
       echo "Warning: Failed to parse Last-Modified date for file $filename"
@@ -44,7 +44,7 @@ done <<< "$files_and_metadata"
 
 if [ -n "$latest_file" ]; then
   # Extract version from latest_file
-  version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//' -e 's/.*-//')
+  version=$(echo "$latest_file" | grep -oP '(?<=fpcpsxnative-)\d+\.\d+\.\d+')
   echo "The latest version is: $version"
 else
   echo "No recent .tgz files found."
