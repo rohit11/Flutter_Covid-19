@@ -30,9 +30,10 @@ update_dependency_version() {
     echo "Updated dependency $DEP_NAME version to $DEP_VERSION in $PACKAGE_JSON_PATH"
 }
 
-# Function to create a new branch from the 'development' branch
-create_new_branch_from_development() {
+# Function to create a new branch from a specified branch
+create_new_branch_from_specified() {
     local BRANCH_NAME=$1
+    local FROM_BRANCH=$2
 
     # Check if branch already exists locally
     if git show-ref --quiet "refs/heads/$BRANCH_NAME"; then
@@ -40,13 +41,13 @@ create_new_branch_from_development() {
         BRANCH_NAME="${BRANCH_NAME}-${TIME_SUFFIX}"
     fi
 
-    # Switch to the 'development' branch and update it
-    if ! git checkout development > /dev/null 2>&1; then
-        echo "Failed to switch to 'development' branch." >&2
+    # Switch to the base branch and update it
+    if ! git checkout "$FROM_BRANCH" > /dev/null 2>&1; then
+        echo "Failed to switch to branch '$FROM_BRANCH'." >&2
         exit 1
     fi
-    if ! git pull origin development > /dev/null 2>&1; then
-        echo "Failed to pull latest changes from 'development'." >&2
+    if ! git pull origin "$FROM_BRANCH" > /dev/null 2>&1; then
+        echo "Failed to pull latest changes from '$FROM_BRANCH'." >&2
         exit 1
     fi
 
@@ -73,7 +74,7 @@ commit_changes() {
     local COMMIT_MESSAGE=$2
     cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
-    # List tracked, modified, and staged files for commit
+    # List tracked and modified files for commit
     local MODIFIED_FILES=$(git ls-files --modified --exclude-standard)
     if [ -z "$MODIFIED_FILES" ]; then
         echo "No changes to commit."
@@ -154,11 +155,19 @@ else
     read -p "Enter custom branch name: " BRANCH_NAME
 fi
 
+# Prompt to use the default current branch 'development'
+read -p "Create new branch from 'development' branch? [y/N] " USE_DEFAULT_BASE_BRANCH
+if [[ "$USE_DEFAULT_BASE_BRANCH" =~ ^[Yy]$ ]]; then
+    BASE_BRANCH="development"
+else
+    read -p "Enter the branch name to create the new branch from: " BASE_BRANCH
+fi
+
 # Change to root directory
 cd "$ROOT_DIR" || { echo "Failed to change directory to $ROOT_DIR"; exit 1; }
 
-# Create a new branch from the development branch
-BRANCH_NAME=$(create_new_branch_from_development "$BRANCH_NAME")
+# Create a new branch from the specified branch
+BRANCH_NAME=$(create_new_branch_from_specified "$BRANCH_NAME" "$BASE_BRANCH")
 echo "Branch created: $BRANCH_NAME" # For debugging
 
 # Read the current version from the package.json file
@@ -200,5 +209,6 @@ commit_changes "$ROOT_DIR" "$COMMIT_MESSAGE"
 push_changes "$BRANCH_NAME"
 
 echo "Script completed successfully."
+
 
 ```
