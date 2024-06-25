@@ -58,6 +58,4 @@ if [ -n "$latest_file" ]; then
 else
   echo "No recent .tgz files found."
 fi
-
-
 ```
