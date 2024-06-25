@@ -20,10 +20,8 @@ html_page=$(curl -s "$FULL_URL")
 latest_file=""
 latest_date=0
 
-while read -r line; do
-  # Extract filename
-  filename=$(echo "$line" | grep -oP 'href="\K[^"]+\.tgz')
-
+# Process each line from the HTML page to extract .tgz file links
+echo "$html_page" | grep -oP '<a href="\K[^"]+\.tgz' | while read -r filename; do
   if [ -n "$filename" ]; then
     # Construct full URL for the file
     file_url="$FULL_URL$filename"
@@ -40,7 +38,7 @@ while read -r line; do
       latest_file=$filename
     fi
   fi
-done <<< "$(echo "$html_page" | grep -oP '<a href="\K[^"]+\.tgz")"
+done
 
 if [ -n "$latest_file" ]; then
   # Strip the prefix and suffix from the latest file name
@@ -49,6 +47,7 @@ if [ -n "$latest_file" ]; then
 else
   echo "No .tgz files found."
 fi
+
 
 ```
 ```
