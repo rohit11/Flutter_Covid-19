@@ -1,8 +1,6 @@
 ```
 #!/bin/bash
 
-#!/bin/bash
-
 # Replace these variables with your own values
 ARTIFACTORY_URL='https://repo1.uhc.com/artifactory'
 REPO='npm-local/@optum-fpc/fpc/-/@optum-fpc'
@@ -25,7 +23,12 @@ while read -r line; do
 
   if [ -n "$filename" ]; then
     # Extract version from filename
-    version=$(echo "$filename" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
+    version=$(echo "$filename" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//' | awk -F '-' '{print $1}')
+    
+    if [ -z "$version" ]; then
+      echo "Warning: Failed to extract version from filename $filename"
+      continue
+    fi
     
     # Extract Last-Modified date and size from metadata
     metadata=$(echo "$line" | sed -e 's/.*<\/a>//')
@@ -57,6 +60,7 @@ if [ -n "$latest_file" ]; then
 else
   echo "No recent .tgz files found."
 fi
+
 
 
 ```
