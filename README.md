@@ -53,9 +53,10 @@ done <<< "$files_and_metadata"
 
 if [ -n "$latest_file" ]; then
   # Extract version from latest_file
-  version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
+  version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//' -e 's/.*-//')
   echo "The latest version is: $version"
 else
   echo "No recent .tgz files found."
 fi
+
 ```
