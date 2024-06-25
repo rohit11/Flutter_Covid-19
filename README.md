@@ -52,7 +52,7 @@ while read -r line; do
 done <<< "$files_and_metadata"
 
 if [ -n "$latest_file" ]; then
-  # Strip the prefix and suffix from the latest file name
+  # Extract version from latest_file
   version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
   echo "The latest version is: $version"
 else
