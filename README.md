@@ -12,7 +12,7 @@ if [ -z "$html_content" ]; then
 fi
 
 # Extract .tgz files and their associated metadata (Last-Modified and size)
-files_and_metadata=$(echo "$html_content" | grep -o '<a href="[^"]*\.tgz"[^>]*>[^<]*</a>' | sed -e 's/<a href="//' -e 's/">.*//')
+files_and_metadata=$(echo "$html_content" | grep -o '<a href="[^"]*\.tgz"[^>]*>[^<]*</a>[^<]*' | sed -e 's/<a href="//' -e 's/">.*//')
 
 # Variables to store the latest file and date
 latest_file=""
@@ -22,14 +22,11 @@ latest_date=0
 while read -r line; do
   # Extract filename, Last-Modified date, and size
   filename=$(echo "$line" | grep -o '[^/]*\.tgz')
-  metadata=$(echo "$line" | sed -e 's/.*>\([^<]*\)<\/a>/\1/')
+  last_modified=$(echo "$line" | grep -o '[0-9]\{2\}-[A-Za-z]\{3\}-[0-9]\{4\} [0-9]\{2\}:[0-9]\{2\}')
   
-  # Extract Last-Modified date from metadata (assuming format like "17-Jun-2024 06:03")
-  last_modified=$(echo "$metadata" | grep -o '^[^ ]* [0-9]*, [0-9]* [0-9]*:[0-9]*')
-
   if [ -n "$filename" ] && [ -n "$last_modified" ]; then
     # Parse Last-Modified date into Unix timestamp
-    file_date=$(date -jf "%d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
+    file_date=$(date -jf "%d-%b-%Y %H:%M" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
     
     if [ -z "$file_date" ]; then
       echo "Warning: Failed to parse Last-Modified date for file $filename"
