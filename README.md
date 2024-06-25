@@ -27,7 +27,7 @@ latest_file=""
 latest_date=0
 
 # Process each line from the HTML page to extract .tgz file links
-echo "$html_page" | grep -o '<a href="[^"]*\.tgz"' | while read -r line; do
+while read -r line; do
   # Extract filename from the HTML link
   filename=$(echo "$line" | sed -e 's/<a href="//' -e 's/"//' | grep -o '[^/]*\.tgz')
 
@@ -41,13 +41,19 @@ echo "$html_page" | grep -o '<a href="[^"]*\.tgz"' | while read -r line; do
     # Convert date to Unix timestamp
     file_date=$(date -d "$last_modified" "+%s" 2>/dev/null)
 
+    # Check if file_date is a valid integer
+    if ! [[ $file_date =~ ^[0-9]+$ ]]; then
+      echo "Warning: Failed to parse Last-Modified date for file $filename"
+      continue
+    fi
+
     # Compare and find the latest file
     if [ "$file_date" -gt "$latest_date" ]; then
       latest_date=$file_date
       latest_file=$filename
     fi
   fi
-done
+done <<< "$(echo "$html_page" | grep -o '<a href="[^"]*\.tgz"')"
 
 if [ -n "$latest_file" ]; then
   # Strip the prefix and suffix from the latest file name
