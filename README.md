@@ -5,6 +5,55 @@
 ```
 #!/bin/bash
 
+# Replace these variables with your own values
+ARTIFACTORY_URL='https://your-artifactory-instance/artifactory'
+REPO='your-repository'
+FOLDER_PATH='path/to/folder'  # Replace with the actual path if needed
+
+# Full URL to the folder
+FULL_URL="$ARTIFACTORY_URL/$REPO/$FOLDER_PATH/"
+
+# Get the list of files (HTML page)
+html_page=$(curl -s "$FULL_URL")
+
+# Extract .tgz files and their modification dates
+latest_file=""
+latest_date=0
+
+while read -r line; do
+  # Extract filename
+  filename=$(echo "$line" | grep -oP 'href="\K[^"]+\.tgz')
+
+  if [ -n "$filename" ]; then
+    # Construct full URL for the file
+    file_url="$FULL_URL$filename"
+    
+    # Get the Last-Modified date of the file
+    last_modified=$(curl -sI "$file_url" | grep -i 'last-modified' | cut -d' ' -f2-)
+    
+    # Convert date to Unix timestamp
+    file_date=$(date -d "$last_modified" +%s)
+    
+    # Compare and find the latest file
+    if [ "$file_date" -gt "$latest_date" ]; then
+      latest_date=$file_date
+      latest_file=$filename
+    fi
+  fi
+done <<< "$(echo "$html_page" | grep -oP '<a href="\K[^"]+\.tgz")"
+
+if [ -n "$latest_file" ]; then
+  # Strip the prefix and suffix from the latest file name
+  version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
+  echo "The latest version is: $version"
+else
+  echo "No .tgz files found."
+fi
+
+```
+```
+#!/bin/bash
+
 # Function to update the main version in a package.json file
 update_package_version() {
     local PACKAGE_JSON_PATH=$1
