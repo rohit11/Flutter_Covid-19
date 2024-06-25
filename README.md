@@ -3,13 +3,6 @@
 # Sample
 
 ```
-#!/bin/bash
-
-# Replace these variables with your own values
-ARTIFACTORY_URL='https://repo1.uhc.com/artifactory'
-REPO='npm-local/@optum-fpc/fpc/-/@optum-fpc'
-FOLDER_PATH=''  # Leave empty if no additional folder path is needed
-
 # Full URL to the folder
 FULL_URL="$ARTIFACTORY_URL/$REPO/$FOLDER_PATH"
 
@@ -22,28 +15,20 @@ if [ -z "$html_page" ]; then
   exit 1
 fi
 
-# Function to parse Last-Modified date into Unix timestamp
-parse_last_modified_date() {
-  local last_modified="$1"
-  local file_date
+# Extract .tgz files and their modification dates directly from html_page
+files=$(echo "$html_page" | grep -o '<a href="[^"]*\.tgz"')
 
-  # Check if running on macOS (BSD) or Linux
-  if [[ $(uname) == "Darwin" ]]; then
-    # macOS (BSD)
-    file_date=$(date -jf "%a, %d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null)
-  else
-    # Linux
-    file_date=$(date -d "$last_modified" "+%s" 2>/dev/null)
-  fi
+# Calculate current date in Unix timestamp
+current_date=$(date "+%s")
 
-  echo "$file_date"
-}
+# Start of last 1 day in Unix timestamp (24 hours ago)
+one_day_ago=$(date -d '1 day ago' "+%s")
 
-# Extract .tgz files and their modification dates
+# Variables to store the latest file and date
 latest_file=""
 latest_date=0
 
-# Process each line from the HTML page to extract .tgz file links
+# Process each file extracted from html_page
 while read -r line; do
   # Extract filename from the HTML link
   filename=$(echo "$line" | sed -e 's/<a href="//' -e 's/"//' | grep -o '[^/]*\.tgz')
@@ -52,11 +37,11 @@ while read -r line; do
     # Construct full URL for the file
     file_url="$FULL_URL/$filename"
 
-    # Get the Last-Modified date of the file
-    last_modified=$(curl -sI "$file_url" | awk -F': ' '/Last-Modified/ { print $2 }')
+    # Get the Last-Modified date of the file directly from the html_page
+    last_modified=$(echo "$html_page" | grep -oP "$filename\".*Last-Modified: \K.*" | head -n 1)
 
     # Parse Last-Modified date into Unix timestamp
-    file_date=$(parse_last_modified_date "$last_modified")
+    file_date=$(date -jf "%a, %d %b %Y %T %Z" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
 
     # Check if file_date is a valid integer
     if ! [[ $file_date =~ ^[0-9]+$ ]]; then
@@ -64,22 +49,24 @@ while read -r line; do
       continue
     fi
 
-    # Compare and find the latest file
-    if [ "$file_date" -gt "$latest_date" ]; then
-      latest_date=$file_date
-      latest_file=$filename
+    # Only consider files modified within the last 24 hours
+    if [ "$file_date" -ge "$one_day_ago" ] && [ "$file_date" -le "$current_date" ]; then
+      # Compare and find the latest file
+      if [ "$file_date" -gt "$latest_date" ]; then
+        latest_date=$file_date
+        latest_file=$filename
+      fi
     fi
   fi
-done <<< "$(echo "$html_page" | grep -o '<a href="[^"]*\.tgz"')"
+done <<< "$files"
 
 if [ -n "$latest_file" ]; then
   # Strip the prefix and suffix from the latest file name
   version=$(echo "$latest_file" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
   echo "The latest version is: $version"
 else
-  echo "No .tgz files found."
+  echo "No recent .tgz files found."
 fi
-
 ```
 ```
 #!/bin/bash
