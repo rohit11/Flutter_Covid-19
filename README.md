@@ -23,7 +23,7 @@ while read -r line; do
 
   if [ -n "$filename" ]; then
     # Extract version from filename
-    version=$(echo "$filename" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//' | awk -F '-' '{print $1}')
+    version=$(echo "$filename" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//' | sed -e 's/<[^>]*>//g')
     
     if [ -z "$version" ]; then
       echo "Warning: Failed to extract version from filename $filename"
