@@ -9,19 +9,19 @@ update_yaml_for_build_trigger() {
     cp "$YAML_FILE" "$TEMP_YAML"
 
     # Update the YAML file:
-    awk -v newBranch="$NEW_BRANCH" -v sauceLabs="${{ !contains(GitHub.event.inputs.upload_to_sauce_labs, 'false') }}" '
+    awk -v newBranch="$NEW_BRANCH" '
     BEGIN {in_on = 0}
     /on:/ {in_on = 1; print "on:"; next}
     in_on && /schedule:/ {next}
     in_on && /cron:/ {in_on = 0; print "  push:\n    branches:\n      - " newBranch; next}
-    {sub(/upload_to_sauce_labs: false/, "upload_to_sauce_labs: " sauceLabs)}
+    {sub(/'\'false'\'/, "'\''true'\'")}
     {print}
     ' "$TEMP_YAML" > "$TEMP_YAML.new"
 
     # Replace the original YAML file if changes are successful
     if grep -q "push:\n    branches:\n      - $NEW_BRANCH" "$TEMP_YAML.new"; then
         mv "$TEMP_YAML.new" "$YAML_FILE"
-        echo "Updated build trigger and upload_to_sauce_labs to '$sauceLabs' in $YAML_FILE"
+        echo "Updated build trigger and upload_to_sauce_labs to 'true' in $YAML_FILE"
     else
         echo "Failed to update build trigger in $YAML_FILE"
         rm "$TEMP_YAML.new"
@@ -31,6 +31,7 @@ update_yaml_for_build_trigger() {
     # Clean up
     rm -f "$TEMP_YAML"
 }
+
 
 # Function to update the YAML file for iOS builds
 update_yaml_for_ios_build_trigger() {
@@ -42,13 +43,12 @@ update_yaml_for_ios_build_trigger() {
     cp "$YAML_FILE" "$TEMP_YAML"
 
     # Update the YAML file:
-    awk -v newBranch="$NEW_BRANCH" -v sauceLabs="${{ !contains(GitHub.event.inputs.upload_to_sauce_labs, 'false') }}" -v firebase="${{ !contains(GitHub.event.inputs.publish_to_firebase, 'false') }}" '
+    awk -v newBranch="$NEW_BRANCH" '
     BEGIN {in_on = 0}
     /on:/ {in_on = 1; print "on:"; next}
     in_on && /schedule:/ {next}
     in_on && /cron:/ {in_on = 0; print "  push:\n    branches:\n      - " newBranch; next}
-    {sub(/upload_to_sauce_labs: false/, "upload_to_sauce_labs: " sauceLabs)}
-    {sub(/upload_to_firebase: false/, "upload_to_firebase: " firebase)}
+    {sub(/'\'false'\'/, "'\''true'\'")}
     {print}
     ' "$TEMP_YAML" > "$TEMP_YAML.new"
 
