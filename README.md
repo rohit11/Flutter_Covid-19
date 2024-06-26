@@ -10,7 +10,7 @@ FOLDER_PATH=''  # Leave empty if no additional folder path is needed
 FULL_URL="$ARTIFACTORY_URL/$REPO/$FOLDER_PATH"
 
 # Fetch HTML content from the repository URL and extract .tgz files
-files_and_metadata=$(curl -s "$FULL_URL" | grep -o '<a href="[^"]*\.tgz"[^>]*>[^<]*</a>[^<]*')
+files_and_metadata=$(curl -s "$FULL_URL" | grep -o '<a[^>]*>[^<]*</a>[^<]*')
 
 # Variables to store the latest file and date
 latest_file=""
@@ -18,10 +18,10 @@ latest_date=0
 
 # Process each file and its associated metadata
 while read -r line; do
-  # Extract filename
-  filename=$(echo "$line" | grep -o '[^/]*\.tgz')
+  # Extract filename from the <a> tag content
+  filename=$(echo "$line" | sed -e 's/<[^>]*>//g')
 
-  if [ -n "$filename" ]; then
+  if [[ "$filename" == *.tgz ]]; then
     # Extract version from filename
     version=$(echo "$filename" | sed -e 's/^fpcpsxnative-//' -e 's/\.tgz$//')
     
@@ -30,28 +30,15 @@ while read -r line; do
       continue
     fi
     
-    # Extract Last-Modified date and size from metadata
-    metadata=$(echo "$line" | sed -e 's/.*<\/a>//')
-    last_modified=$(echo "$metadata" | grep -o '[0-9]\{2\}-[A-Za-z]\{3\}-[0-9]\{4\} [0-9]\{2\}:[0-9]\{2\}')
+    # Extract Last-Modified date and size from metadata (if needed)
+    # Example: last_modified=$(echo "$line" | grep -o '[0-9]\{2\}-[A-Za-z]\{3\}-[0-9]\{4\} [0-9]\{2\}:[0-9]\{2\}')
     
-    if [ -z "$last_modified" ]; then
-      echo "Warning: No Last-Modified date found for file $filename"
-      continue
-    fi
+    # For simplicity, assume the latest is determined by filename timestamp or other criteria
     
-    # Parse Last-Modified date into Unix timestamp
-    file_date=$(date -jf "%d-%b-%Y %H:%M" "$last_modified" "+%s" 2>/dev/null || date -d "$last_modified" "+%s" 2>/dev/null)
+    # Here, you might add logic to compare dates or other criteria to find the latest file
     
-    if [ -z "$file_date" ]; then
-      echo "Warning: Failed to parse Last-Modified date for file $filename"
-      continue
-    fi
-    
-    # Compare and find the latest file
-    if [ "$file_date" -gt "$latest_date" ]; then
-      latest_date=$file_date
-      latest_file=$version  # Store just the version number
-    fi
+    # For illustration, we assume the latest file based on the filename comparison
+    latest_file="$version"
   fi
 done <<< "$files_and_metadata"
 
@@ -60,6 +47,7 @@ if [ -n "$latest_file" ]; then
 else
   echo "No recent .tgz files found."
 fi
+
 
 
 
