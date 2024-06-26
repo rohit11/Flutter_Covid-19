@@ -1,4 +1,27 @@
 ```
+
+update_workflow_yaml() {
+    local file_path="$1"      # Argument for file path
+    local branch_name="$2"    # Argument for branch name
+
+    if [ -f "$file_path" ]; then
+        # Replace 'false' with 'true' within quotes and replace 'schedule:' with 'push:'
+        # Also add branches section under push: with the provided branch_name
+        sed -i '' \
+            -e "s/'false'/'true'/g" \
+            -e "s/schedule:/push:/g" \
+            -e "/# run every day at 8:30AM-IST \/ 3:00AM-UTC/d" \
+            -e "/- cron: '0 03 \*\*\*'/d" \
+            -e "/push:/a\\
+    branches:\\
+      - '$branch_name'" \
+            "$file_path"
+        echo "Replacements completed."
+    else
+        echo "File '$file_path' not found."
+    fi
+}
+
 # Function to update the YAML file for triggering builds and changing upload_to_sauce_labs
 # Function to update the YAML file for triggering builds and changing upload_to_sauce_labs
 update_yaml_for_build_trigger() {
