@@ -1,9 +1,10 @@
 ```
 # Function to update the YAML file for triggering builds and changing upload_to_sauce_labs
+# Function to update the YAML file for triggering builds and changing upload_to_sauce_labs
 update_yaml_for_build_trigger() {
     local YAML_FILE=$1
     local NEW_BRANCH=$2
-    local TEMP_YAML=temp_volcan_android_internal_build.yml
+    local TEMP_YAML=temp_workflow.yaml
 
     # Backup the original YAML file
     cp "$YAML_FILE" "$TEMP_YAML"
@@ -14,7 +15,7 @@ update_yaml_for_build_trigger() {
     /on:/ {in_on = 1; print "on:"; next}
     in_on && /schedule:/ {next}
     in_on && /cron:/ {in_on = 0; print "  push:\n    branches:\n      - " newBranch; next}
-    {sub(/'\'false'\'/, "'\''true'\'")}
+    {gsub(/'\''false'\''/, "'\''true'\''")}
     {print}
     ' "$TEMP_YAML" > "$TEMP_YAML.new"
 
