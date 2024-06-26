@@ -9,6 +9,9 @@ FOLDER_PATH=''  # Leave empty if no additional folder path is needed
 # Full URL to the folder
 FULL_URL="$ARTIFACTORY_URL/$REPO/$FOLDER_PATH"
 
+# Get today's date in the format used in the HTML metadata (e.g., '25-Jun-2024')
+today=$(date +"%d-%b-%Y")
+
 # Fetch HTML content from the repository URL
 html_content=$(curl -s "$FULL_URL")
 
@@ -16,8 +19,8 @@ html_content=$(curl -s "$FULL_URL")
 latest_version=""
 latest_date=0
 
-# Extract lines with .tgz filenames and their dates
-files_and_metadata=$(echo "$html_content" | grep -o '<a href="[^"]*\.tgz"[^>]*>[^<]*</a>[^<]*')
+# Extract lines with .tgz filenames and their dates from today's entries
+files_and_metadata=$(echo "$html_content" | grep -o "<a href=\"[^\"]*\.tgz\"[^>]*>[^<]*</a>[^<]*$today[^<]*")
 
 # Process each file and its associated metadata
 while IFS= read -r line; do
@@ -27,7 +30,7 @@ while IFS= read -r line; do
   
   # Extract Last-Modified date from metadata (e.g., '25-Jun-2024 19:03')
   last_modified=$(echo "$metadata" | grep -o '[0-9]\{2\}-[A-Za-z]\{3\}-[0-9]\{4\} [0-9]\{2\}:[0-9]\{2\}')
-  
+
   # Skip if we can't find a valid date
   if [ -z "$last_modified" ]; then
     echo "Warning: Failed to parse Last-Modified date for file $filename"
@@ -56,8 +59,9 @@ done <<< "$files_and_metadata"
 if [ -n "$latest_version" ]; then
   echo "The latest version is: $latest_version"
 else
-  echo "No recent .tgz files found."
+  echo "No .tgz files found for today."
 fi
+
 
 
 
