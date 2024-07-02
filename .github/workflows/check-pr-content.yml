@@ -14,12 +14,13 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          const prBody = context.payload.pull_request.body;
+          const prBody = context.payload.pull_request.body || '';  // Default to empty string if prBody is undefined
 
           const imageRegex = /!\[.*\]\(.*\)|<img .*src=.*>/; // Markdown or HTML image
           const videoRegex = /(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>)/i; // Video URL or HTML video
 
-          if (!imageRegex.test(prBody) && !videoRegex.test(prBody)) {
+          // Check if prBody is empty or doesn't contain images or videos
+          if (!prBody.trim() || (!imageRegex.test(prBody) && !videoRegex.test(prBody))) {
             return {
               status: 'failure',
               message: 'Please include a screenshot or video in the PR description.',
