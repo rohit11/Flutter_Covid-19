@@ -1,94 +1,36 @@
 ```
 
-update_workflow_yaml() {
-    local file_path="$1"      # Argument for file path
-    local branch_name="$2"    # Argument for branch name
+name: Check PR for Screenshot or Video
 
-    if [ -f "$file_path" ]; then
-        # Replace 'false' with 'true' within quotes and replace 'schedule:' with 'push:'
-        # Also add branches section under push: with the provided branch_name
-        sed -i '' \
-            -e "s/'false'/'true'/g" \
-            -e "s/schedule:/push:/g" \
-            -e "/# run every day at 8:30AM-IST \/ 3:00AM-UTC/d" \
-            -e "/- cron: '0 03 \*\*\*'/d" \
-            -e "/push:/a\\
-    branches:\\
-      - '$branch_name'" \
-            "$file_path"
-        echo "Replacements completed."
-    else
-        echo "File '$file_path' not found."
-    fi
-}
+on:
+  pull_request:
+    branches: '**'  # Apply to pull requests targeting any branch
+    types: [opened, edited, synchronize, ready_for_review]
 
-# Function to update the YAML file for triggering builds and changing upload_to_sauce_labs
-# Function to update the YAML file for triggering builds and changing upload_to_sauce_labs
-update_yaml_for_build_trigger() {
-    local YAML_FILE=$1
-    local NEW_BRANCH=$2
-    local TEMP_YAML=temp_workflow.yaml
+jobs:
+  check-pr-content:
+    runs-on: ubuntu-latest
 
-    # Backup the original YAML file
-    cp "$YAML_FILE" "$TEMP_YAML"
+    steps:
+    - name: Check PR for image or video
+      uses: actions/github-script@v6
+      with:
+        script: |
+          // Extract PR description
+          const prBody = context.payload.pull_request.body;
 
-    # Update the YAML file:
-    awk -v newBranch="$NEW_BRANCH" '
-    BEGIN {in_on = 0}
-    /on:/ {in_on = 1; print "on:"; next}
-    in_on && /schedule:/ {next}
-    in_on && /cron:/ {in_on = 0; print "  push:\n    branches:\n      - " newBranch; next}
-    {gsub(/'\''false'\''/, "'\''true'\''")}
-    {print}
-    ' "$TEMP_YAML" > "$TEMP_YAML.new"
+          // Regex patterns for images and videos
+          const imageRegex = /!\[.*\]\(.*\)|<img .*src=.*>/; // Markdown or HTML image
+          const videoRegex = /(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>)/i; // Video URL or HTML video
 
-    # Replace the original YAML file if changes are successful
-    if grep -q "push:\n    branches:\n      - $NEW_BRANCH" "$TEMP_YAML.new"; then
-        mv "$TEMP_YAML.new" "$YAML_FILE"
-        echo "Updated build trigger and upload_to_sauce_labs to 'true' in $YAML_FILE"
-    else
-        echo "Failed to update build trigger in $YAML_FILE"
-        rm "$TEMP_YAML.new"
-        exit 1
-    fi
-
-    # Clean up
-    rm -f "$TEMP_YAML"
-}
-
-
-# Function to update the YAML file for iOS builds
-update_yaml_for_ios_build_trigger() {
-    local YAML_FILE=$1
-    local NEW_BRANCH=$2
-    local TEMP_YAML=temp_volcan_ios_internal_build.yml
-
-    # Backup the original YAML file
-    cp "$YAML_FILE" "$TEMP_YAML"
-
-    # Update the YAML file:
-    awk -v newBranch="$NEW_BRANCH" '
-    BEGIN {in_on = 0}
-    /on:/ {in_on = 1; print "on:"; next}
-    in_on && /schedule:/ {next}
-    in_on && /cron:/ {in_on = 0; print "  push:\n    branches:\n      - " newBranch; next}
-    {sub(/'\'false'\'/, "'\''true'\'")}
-    {print}
-    ' "$TEMP_YAML" > "$TEMP_YAML.new"
-
-    # Replace the original YAML file if changes are successful
-    if grep -q "push:\n    branches:\n      - $NEW_BRANCH" "$TEMP_YAML.new"; then
-        mv "$TEMP_YAML.new" "$YAML_FILE"
-        echo "Updated build trigger and upload_to_sauce_labs/upload_to_firebase to 'true' in $YAML_FILE"
-    else
-        echo "Failed to update build trigger in $YAML_FILE"
-        rm "$TEMP_YAML.new"
-        exit 1
-    fi
-
-    # Clean up
-    rm -f "$TEMP_YAML"
-}
+          // Check if PR description includes images or videos
+          if (!imageRegex.test(prBody) && !videoRegex.test(prBody)) {
+            // Add a comment to the PR if no images or videos are found
+            const issueComment = context.issue({
+              body: 'Please include a screenshot or video in the PR description.',
+            });
+            return github.issues.createComment(issueComment);
+          }
 
 
 ```
