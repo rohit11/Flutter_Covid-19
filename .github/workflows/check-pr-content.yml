@@ -23,9 +23,12 @@ jobs:
 
           // Check if PR description includes images or videos
           if (!imageRegex.test(prBody) && !videoRegex.test(prBody)) {
-            // Add a comment to the PR if no images or videos are found
-            const issueComment = context.issue({
+            // Construct issue comment
+            const issueComment = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
               body: 'Please include a screenshot or video in the PR description.',
-            });
+            };
             return github.issues.createComment(issueComment);
           }
