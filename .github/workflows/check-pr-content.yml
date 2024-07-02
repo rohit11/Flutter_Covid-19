@@ -2,7 +2,7 @@ name: Check PR for Screenshot or Video
 
 on:
   pull_request:
-    branches: '**'  # Apply to pull requests targeting any branch
+    branches: '**'
     types: [opened, edited, synchronize, ready_for_review]
 
 jobs:
@@ -11,7 +11,6 @@ jobs:
 
     steps:
     - name: Check PR for image or video
-      id: pr-check
       uses: actions/github-script@v6
       with:
         script: |
@@ -31,31 +30,3 @@ jobs:
               message: 'PR includes a screenshot or video in the description.',
             };
           }
-
-    - name: Set PR status
-      if: ${{ steps.pr-check.outputs.status == 'failure' }}
-      uses: github-script@v6
-      with:
-        script: |
-          github.repos.createCommitStatus({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            sha: context.payload.pull_request.head.sha,
-            state: 'failure',
-            context: 'Screenshot or Video Check',
-            description: 'Please include a screenshot or video in the PR description.',
-          });
-
-    - name: Set PR status
-      if: ${{ steps.pr-check.outputs.status == 'success' }}
-      uses: github-script@v6
-      with:
-        script: |
-          github.repos.createCommitStatus({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            sha: context.payload.pull_request.head.sha,
-            state: 'success',
-            context: 'Screenshot or Video Check',
-            description: 'PR includes a screenshot or video in the description.',
-          });
