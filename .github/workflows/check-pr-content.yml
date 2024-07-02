@@ -20,11 +20,19 @@ jobs:
         imageRegex="!\[.*\]\(.*\)|<img .*src=.*>"
         videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
 
-        # Check if PR body is empty or doesn't match image or video regex
-        if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex || ! "$PR_BODY" =~ $videoRegex ]]; then
-          echo "::set-output name=status::failure"
-          echo "::set-output name=message::Please include a screenshot or video in the PR description."
+        # Check if PR body is empty or doesn't contain image or video
+        if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
+          echo "status=failure" >> $GITHUB_ENV
+          echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
         else
-          echo "::set-output name=status::success"
-          echo "::set-output name=message::PR includes a screenshot or video in the description."
+          echo "status=success" >> $GITHUB_ENV
+          echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
         fi
+
+    - name: Set outputs
+      env:
+        STATUS: ${{ steps.check-content.outputs.status }}
+        MESSAGE: ${{ steps.check-content.outputs.message }}
+      run: |
+        echo "Status: $STATUS"
+        echo "Message: $MESSAGE"
