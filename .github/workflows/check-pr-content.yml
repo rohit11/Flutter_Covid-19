@@ -31,8 +31,8 @@ jobs:
 
     - name: Set outputs
       env:
-        STATUS: ${{ steps.check-content.outputs.status }}
-        MESSAGE: ${{ steps.check-content.outputs.message }}
+        STATUS: ${{ env.status }}
+        MESSAGE: ${{ env.message }}
       run: |
         echo "Status: $STATUS"
         echo "Message: $MESSAGE"
