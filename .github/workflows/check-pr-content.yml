@@ -11,24 +11,51 @@ jobs:
 
     steps:
     - name: Check PR for image or video
+      id: pr-check
       uses: actions/github-script@v6
       with:
         script: |
-          // Extract PR description
           const prBody = context.payload.pull_request.body;
 
-          // Regex patterns for images and videos
           const imageRegex = /!\[.*\]\(.*\)|<img .*src=.*>/; // Markdown or HTML image
           const videoRegex = /(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>)/i; // Video URL or HTML video
 
-          // Check if PR description includes images or videos
           if (!imageRegex.test(prBody) && !videoRegex.test(prBody)) {
-            // Construct issue comment
-            const issueComment = {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: 'Please include a screenshot or video in the PR description.',
+            return {
+              status: 'failure',
+              message: 'Please include a screenshot or video in the PR description.',
             };
-            return github.issues.createComment(issueComment);
+          } else {
+            return {
+              status: 'success',
+              message: 'PR includes a screenshot or video in the description.',
+            };
           }
+
+    - name: Set PR status
+      if: ${{ steps.pr-check.outputs.status == 'failure' }}
+      uses: github-script@v6
+      with:
+        script: |
+          github.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: context.payload.pull_request.head.sha,
+            state: 'failure',
+            context: 'Screenshot or Video Check',
+            description: 'Please include a screenshot or video in the PR description.',
+          });
+
+    - name: Set PR status
+      if: ${{ steps.pr-check.outputs.status == 'success' }}
+      uses: github-script@v6
+      with:
+        script: |
+          github.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: context.payload.pull_request.head.sha,
+            state: 'success',
+            context: 'Screenshot or Video Check',
+            description: 'PR includes a screenshot or video in the description.',
+          });
