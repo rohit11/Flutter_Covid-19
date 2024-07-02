@@ -11,23 +11,19 @@ jobs:
 
     steps:
     - name: Check PR for image or video
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const prBody = context.payload.pull_request.body || '';  // Default to empty string if prBody is undefined
+      id: check-content
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
+      run: |
+        echo "PR Body: $PR_BODY"
 
-          const imageRegex = /!\[.*\]\(.*\)|<img .*src=.*>/; // Markdown or HTML image
-          const videoRegex = /(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>)/i; // Video URL or HTML video
+        imageRegex="!\[.*\]\(.*\)|<img .*src=.*>"
+        videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
 
-          // Check if prBody is empty or doesn't contain images or videos
-          if (!prBody.trim() || (!imageRegex.test(prBody) && !videoRegex.test(prBody))) {
-            return {
-              status: 'failure',
-              message: 'Please include a screenshot or video in the PR description.',
-            };
-          } else {
-            return {
-              status: 'success',
-              message: 'PR includes a screenshot or video in the description.',
-            };
-          }
+        if [[ -z "$PR_BODY" || ! "$PR_BODY" =~ $imageRegex || ! "$PR_BODY" =~ $videoRegex ]]; then
+          echo "::set-output name=status::failure"
+          echo "::set-output name=message::Please include a screenshot or video in the PR description."
+        else
+          echo "::set-output name=status::success"
+          echo "::set-output name=message::PR includes a screenshot or video in the description."
+        fi
