@@ -35,8 +35,8 @@ jobs:
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
           videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
-          checkboxRegex1="- \[ \] YES:"
-          checkboxRegex2="- \[ \] NO"
+          checkboxRegex1="^- \\[ \\] YES:"
+          checkboxRegex2="^- \\[ \\] NO"
 
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
             echo "status=failure" >> $GITHUB_ENV
