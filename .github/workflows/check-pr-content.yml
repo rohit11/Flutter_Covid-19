@@ -10,29 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check PR for image or video
-      id: check-content
-      env:
-        PR_BODY: ${{ github.event.pull_request.body }}
-      run: |
-        echo "PR Body: $PR_BODY"
+      - name: Check PR for image or video
+        id: check-content
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "PR Body: $PR_BODY"
 
-        imageRegex="!\[.*\]\(.*\)|<img .*src=.*>"
-        videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
+          imageRegex="!\[.*\]\(.*\)|<img .*src=.*>"
+          videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
 
-        # Check if PR body is empty or doesn't contain image or video
-        if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
-          echo "status=failure" >> $GITHUB_ENV
-          echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-        else
-          echo "status=success" >> $GITHUB_ENV
-          echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
-        fi
+          if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
+            echo "status=failure" >> $GITHUB_ENV
+            echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
+          else
+            echo "status=success" >> $GITHUB_ENV
+            echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
+          fi
 
-    - name: Set outputs
-      env:
-        STATUS: ${{ env.status }}
-        MESSAGE: ${{ env.message }}
-      run: |
-        echo "Status: $STATUS"
-        echo "Message: $MESSAGE"
+      - name: Set outputs
+        env:
+          STATUS: ${{ env.status }}
+          MESSAGE: ${{ env.message }}
+        run: |
+          echo "Status: $STATUS"
+          echo "Message: $MESSAGE"
