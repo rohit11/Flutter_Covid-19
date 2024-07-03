@@ -7,7 +7,11 @@ on:
 jobs:
   check-pr-content:
     runs-on: ubuntu-latest
-
+    
+    env:
+      status: "success"
+      message: "PR includes a screenshot or video in the description."
+      
     steps:
       - name: Check for Smartling label
         id: check-labels
@@ -17,11 +21,11 @@ jobs:
           echo "PR Labels: $PR_LABELS"
           if echo "$PR_LABELS" | grep -q '"name": "smartling"'; then
             echo "status=success" >> $GITHUB_ENV
-            echo "message=Skipped image, video, and checkbox check due to 'smartling' label." >> $GITHUB_ENV
+            echo "message=Skipped image, video due to 'smartling' label." >> $GITHUB_ENV
             exit 0  # Exit with success code if 'smartling' label is present
           fi
 
-      - name: Check PR for image, video, and specific checkboxes
+      - name: Check PR for image, video
         id: check-content
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -31,29 +35,13 @@ jobs:
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
           videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
-          # Updated regex to handle spaces around the x or X
-          checkboxRegexYes="^- \\[ *[xX] *\\] *YES.*"
-          checkboxRegexNo="^- \\[ *[xX] *\\] *NO.*"
-
-          hasYes=$(echo "$PR_BODY" | grep -cE "$checkboxRegexYes")
-          hasNo=$(echo "$PR_BODY" | grep -cE "$checkboxRegexNo")
-
-          echo "Debug: hasYes=$hasYes"
-          echo "Debug: hasNo=$hasNo"
-
           if [[ -z "${PR_BODY// }" ]]; then
             echo "status=failure" >> $GITHUB_ENV
-            echo "message=PR body is empty. Please include a screenshot or video and check either 'YES' or 'NO' checkbox in the PR description." >> $GITHUB_ENV
+            echo "message=PR body is empty. Please include a screenshot or video in the PR description." >> $GITHUB_ENV
           elif ! echo "$PR_BODY" | grep -qE "$imageRegex" && ! echo "$PR_BODY" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-          elif [[ $hasYes -gt 0 || $hasNo -gt 0 ]]; then
-            echo "status=success" >> $GITHUB_ENV
-            echo "message=PR includes a screenshot or video and at least one specific checkbox is checked in the description." >> $GITHUB_ENV
-          else
-            echo "status=failure" >> $GITHUB_ENV
-            echo "message=Please check either 'YES' or 'NO' checkbox in the PR description." >> $GITHUB_ENV
-          fi
+         
 
       - name: Echo status
         if: always()
