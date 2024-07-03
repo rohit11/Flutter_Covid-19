@@ -1,3 +1,3 @@
 ## check flag
--   [ ] YES:
+-   [ ] YES
 -   [ ] NO
