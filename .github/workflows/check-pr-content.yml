@@ -2,7 +2,6 @@ name: Check PR for Screenshot or Video
 
 on:
   pull_request:
-    branches: '**'
     types: [opened, edited, synchronize, ready_for_review]
 
 jobs:
@@ -21,17 +20,17 @@ jobs:
           videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
 
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
-            echo "status=failure" >> $GITHUB_ENV
-            echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
+            echo "::set-output name=status::failure"
+            echo "::set-output name=message::Please include a screenshot or video in the PR description."
           else
-            echo "status=success" >> $GITHUB_ENV
-            echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
+            echo "::set-output name=status::success"
+            echo "::set-output name=message::PR includes a screenshot or video in the description."
           fi
 
       - name: Set outputs
-        env:
-          STATUS: ${{ env.status }}
-          MESSAGE: ${{ env.message }}
+        id: set-outputs
         run: |
-          echo "Status: $STATUS"
-          echo "Message: $MESSAGE"
+          echo "Status: ${{ steps.check-content.outputs.status }}"
+          echo "Message: ${{ steps.check-content.outputs.message }}"
+          echo "::set-output name=status::${{ steps.check-content.outputs.status }}"
+          echo "::set-output name=message::${{ steps.check-content.outputs.message }}"
