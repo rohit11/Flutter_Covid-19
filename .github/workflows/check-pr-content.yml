@@ -32,8 +32,8 @@ jobs:
         run: |
           echo "PR Body: $PR_BODY"
 
-          imageRegex: "!\\[.*\\]\\(.*\\)|<img .*src=.*>"
-          videoRegex: "https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
+          imageRegex= "!\\[.*\\]\\(.*\\)|<img .*src=.*>"
+          videoRegex= "https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
           checkboxRegex1="- \[ \] YES:"
           checkboxRegex2="- \[ \] NO"
