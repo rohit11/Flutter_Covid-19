@@ -48,7 +48,7 @@ jobs:
           PR_BODY_NORMALIZED: ${{ env.PR_BODY_NORMALIZED }}
         run: |
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
-          videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
+          videoRegex="(https?://.*\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|https?://github\.com/[^/\s]+/[^/\s]+/assets/[^/\s]+/\w+|<video .*src=.*)"
 
           body=$(echo "${{ github.event.pull_request.body }}" | tr -d '\r')
           echo "Debug: PR Body: '$body'"
