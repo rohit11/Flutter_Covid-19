@@ -20,26 +20,38 @@ jobs:
           videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
 
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
-            echo "::set-output name=status::failure"
-            echo "::set-output name=message::Please include a screenshot or video in the PR description."
+            echo "status=failure" >> $GITHUB_ENV
+            echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
             exit 1  # Exit with failure code
           else
-            echo "::set-output name=status::success"
-            echo "::set-output name=message::PR includes a screenshot or video in the description."
+            echo "status=success" >> $GITHUB_ENV
+            echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
             exit 0  # Exit with success code
           fi
 
       - name: Set outputs
         id: set-outputs
         run: |
-          echo "Status: ${{ steps.check-content.outputs.status }}"
-          echo "Message: ${{ steps.check-content.outputs.message }}"
-          echo "STATUS=${{ steps.check-content.outputs.status }}" >> $GITHUB_ENV
-          echo "MESSAGE=${{ steps.check-content.outputs.message }}" >> $GITHUB_ENV
+          echo "Status: ${{ env.status }}"
+          echo "Message: ${{ env.message }}"
+          echo "STATUS=${{ env.status }}" >> $GITHUB_ENV
+          echo "MESSAGE=${{ env.message }}" >> $GITHUB_ENV
+
+      - name: Finalize status
+        if: always()
+        run: |
+          echo "Final Status: ${{ env.status }}"
+          echo "Final Message: ${{ env.message }}"
+          echo "STATUS=${{ env.status }}" >> $GITHUB_ENV
+          echo "MESSAGE=${{ env.message }}" >> $GITHUB_ENV
 
       - name: Echo status
         if: always()
         run: |
-          echo "Status: ${{ steps.check-content.outputs.status }}"
-          echo "Message: ${{ steps.check-content.outputs.message }}"
-
+          echo "Status: ${{ env.STATUS }}"
+          echo "Message: ${{ env.MESSAGE }}"
+          if [[ "${{ env.status }}" == "success" ]]; then
+            exit 0  # Exit with success code
+          else
+            exit 1  # Exit with failure code
+          fi
