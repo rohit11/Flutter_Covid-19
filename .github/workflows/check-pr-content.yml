@@ -32,11 +32,18 @@ jobs:
         run: |
           echo "Status: ${{ env.status }}"
           echo "Message: ${{ env.message }}"
-          echo "::set-env name=STATUS::${{ env.status }}"
-          echo "::set-env name=MESSAGE::${{ env.message }}"
+          echo "STATUS=${{ env.status }}" >> $GITHUB_ENV
+          echo "MESSAGE=${{ env.message }}" >> $GITHUB_ENV
 
       - name: Finalize status
         if: always()
         run: |
-          echo "::set-env name=STATUS::${{ env.status }}"
-          echo "::set-env name=MESSAGE::${{ env.message }}"
+          echo "Status: ${{ env.status }}"
+          echo "Message: ${{ env.message }}"
+          echo "STATUS=${{ env.status }}" >> $GITHUB_ENV
+          echo "MESSAGE=${{ env.message }}" >> $GITHUB_ENV
+
+      - name: Echo status
+        run: |
+          echo "Status: ${{ env.STATUS }}"
+          echo "Message: ${{ env.MESSAGE }}"
