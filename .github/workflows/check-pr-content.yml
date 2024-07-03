@@ -1,4 +1,4 @@
-name: Check PR for Screenshot, Video, and Specific Checkboxes
+name: Check PR for Screenshot or Video
 
 on:
   pull_request:
@@ -8,25 +8,26 @@ jobs:
   check-pr-content:
     runs-on: ubuntu-latest
     
-    env:
-      status: "success"
-      message: "PR includes a screenshot or video in the description."
-      
     steps:
       - name: Check for Smartling label
         id: check-labels
         env:
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels) }}
         run: |
-          echo "PR Labels: $PR_LABELS"
-          if echo "$PR_LABELS" | grep -q '"name": "smartling"'; then
+          echo "Debug: PR Labels: $PR_LABELS"
+
+          LABEL_FOUND=$(echo "$PR_LABELS" | grep -o '"name": "smartling"' | awk -F': ' '{print $2}' | sed 's/"//g')
+          echo "Debug: LABEL_FOUND: $LABEL_FOUND"
+          
+          if [ "$LABEL_FOUND" == "smartling" ]; then
             echo "status=success" >> $GITHUB_ENV
-            echo "message=Skipped image, video due to 'smartling' label." >> $GITHUB_ENV
-            exit 0  # Exit with success code if 'smartling' label is present
+            echo "message=Skipped image or video check due to 'smartling' label." >> $GITHUB_ENV
+            exit 0
           fi
 
-      - name: Check PR for image, video
+      - name: Check PR for image or video
         id: check-content
+        if: env.status == 'continue'
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
@@ -41,8 +42,10 @@ jobs:
           elif ! echo "$PR_BODY" | grep -qE "$imageRegex" && ! echo "$PR_BODY" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
+          else
+            echo "status=success" >> $GITHUB_ENV
+            echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
           fi
-         
 
       - name: Echo status
         if: always()
@@ -50,7 +53,7 @@ jobs:
           echo "Status: ${{ env.status }}"
           echo "Message: ${{ env.message }}"
           if [[ "${{ env.status }}" == "success" ]]; then
-            exit 0  # Exit with success code
+            exit 0
           else
-            exit 1  # Exit with failure code
+            exit 1
           fi
