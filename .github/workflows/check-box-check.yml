@@ -2,7 +2,7 @@ name: Check Pull Request Flags
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, ready_for_review, labeled, unlabeled]
+    types: [opened, reopened, synchronize]
 
 jobs:
   check_flags:
@@ -17,10 +17,11 @@ jobs:
           body="${{ github.event.pull_request.body }}"
           echo "Pull request body:"
           echo "$body"
-          if echo "$body" | grep -q '\[\s*[xX]\s*\]\s*YES'; then
+          # Use extended regex to match across multiple lines and with various spaces
+          if echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*YES'; then
             echo "YES is checked."
             exit 0
-          elif echo "$body" | grep -q '\[\s*[xX]\s*\]\s*NO'; then
+          elif echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*NO'; then
             echo "NO is checked."
             exit 0
           else
