@@ -15,8 +15,8 @@ jobs:
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels) }}
         run: |
           echo "Debug: PR Labels: $PR_LABELS"
-
-          LABEL_FOUND=$(echo "$PR_LABELS" | grep -o '"name": "smartling"' | awk -F': ' '{print $2}' | sed 's/"//g')
+          
+          LABEL_FOUND=$(echo "$PR_LABELS" | grep -o '"name": *"smartling"' | awk -F': ' '{print $2}' | sed 's/"//g')
           echo "Debug: LABEL_FOUND: $LABEL_FOUND"
           
           if [ "$LABEL_FOUND" == "smartling" ]; then
@@ -24,22 +24,33 @@ jobs:
             echo "message=Skipped image or video check due to 'smartling' label." >> $GITHUB_ENV
             exit 0
           fi
+          echo "status=continue" >> $GITHUB_ENV
+
+      - name: Normalize PR Body
+        id: normalize-pr-body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "Debug: PR Body Original: '$PR_BODY'"
+          
+          PR_BODY_NORMALIZED=$(echo "$PR_BODY" | tr -d '\r\n' | sed 's/[[:space:]]\+/ /g')
+          echo "Debug: PR Body Normalized: '$PR_BODY_NORMALIZED'"
+          
+          echo "PR_BODY_NORMALIZED=$PR_BODY_NORMALIZED" >> $GITHUB_ENV
 
       - name: Check PR for image or video
         id: check-content
         if: env.status == 'continue'
         env:
-          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_BODY_NORMALIZED: ${{ env.PR_BODY_NORMALIZED }}
         run: |
-          echo "Debug: PR Body: '$PR_BODY'"
-
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
           videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
-          if [[ -z "${PR_BODY// }" ]]; then
+          if [[ -z "${PR_BODY_NORMALIZED// }" ]]; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=PR body is empty. Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-          elif ! echo "$PR_BODY" | grep -qE "$imageRegex" && ! echo "$PR_BODY" | grep -qE "$videoRegex"; then
+          elif ! echo "$PR_BODY_NORMALIZED" | grep -qE "$imageRegex" && ! echo "$PR_BODY_NORMALIZED" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
           else
