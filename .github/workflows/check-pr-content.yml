@@ -35,13 +35,20 @@ jobs:
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
           videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
-          checkboxRegex1="^- \\[[ \\]]*\\] *YES.*"
-          checkboxRegex2="^- \\[[ \\]]*\\] *NO.*"
+          # Updated regex to handle spaces around the x
+          checkboxRegex1="^- \\[[ xX]*\\] *YES.*"
+          checkboxRegex2="^- \\[[ xX]*\\] *NO.*"
+
+          hasYes=$(echo "$PR_BODY" | grep -cE "$checkboxRegex1")
+          hasNo=$(echo "$PR_BODY" | grep -cE "$checkboxRegex2")
 
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-          elif ! echo "$PR_BODY" | grep -qE "$checkboxRegex1" && ! echo "$PR_BODY" | grep -qE "$checkboxRegex2"; then
+          elif [[ $hasYes -gt 0 || $hasNo -gt 0 ]]; then
+            echo "status=success" >> $GITHUB_ENV
+            echo "message=PR includes a screenshot or video and at least one specific checkbox is checked in the description." >> $GITHUB_ENV
+          else
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please check either 'YES' or 'NO' checkbox in the PR description." >> $GITHUB_ENV
           fi
