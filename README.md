@@ -1,5 +1,4 @@
 ```
-
 name: Check PR for Screenshot or Video
 
 on:
