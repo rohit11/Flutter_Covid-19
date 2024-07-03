@@ -59,12 +59,12 @@ jobs:
           elif ! echo "$PR_BODY_NORMALIZED" | grep -qE "$imageRegex" && ! echo "$PR_BODY_NORMALIZED" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-          elif ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*YES'; then
+          elif ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*YES' && ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*NO'; then
             echo "status=failure" >> $GITHUB_ENV
-            echo "message=Please check 'YES' checkbox in the PR description." >> $GITHUB_ENV
+            echo "message=Please check either 'YES' or 'NO' checkbox in the PR description." >> $GITHUB_ENV
           else
             echo "status=success" >> $GITHUB_ENV
-            echo "message=PR includes a screenshot or video and 'YES' checkbox in the description." >> $GITHUB_ENV
+            echo "message=PR includes a screenshot or video and either 'YES' or 'NO' checkbox in the description." >> $GITHUB_ENV
           fi
 
       - name: Echo status
