@@ -36,8 +36,8 @@ jobs:
           videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
           # Updated regex to handle spaces around the x
-          checkboxRegex1="^- \\[[ xX]*\\] *YES.*"
-          checkboxRegex2="^- \\[[ xX]*\\] *NO.*"
+          checkboxRegex1="^- \\[ *[xX] *\\] *YES.*"
+          checkboxRegex2="^- \\[ *[xX] *\\] *NO.*"
 
           hasYes=$(echo "$PR_BODY" | grep -cE "$checkboxRegex1")
           hasNo=$(echo "$PR_BODY" | grep -cE "$checkboxRegex2")
