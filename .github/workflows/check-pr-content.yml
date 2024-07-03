@@ -27,27 +27,11 @@ jobs:
             echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
           fi
 
-      - name: Set outputs
-        id: set-outputs
-        run: |
-          echo "Status: ${{ env.status }}"
-          echo "Message: ${{ env.message }}"
-          echo "STATUS=${{ env.status }}" >> $GITHUB_ENV
-          echo "MESSAGE=${{ env.message }}" >> $GITHUB_ENV
-
-      - name: Finalize status
-        if: always()
-        run: |
-          echo "Final Status: ${{ env.status }}"
-          echo "Final Message: ${{ env.message }}"
-          echo "STATUS=${{ env.status }}" >> $GITHUB_ENV
-          echo "MESSAGE=${{ env.message }}" >> $GITHUB_ENV
-
       - name: Echo status
         if: always()
         run: |
-          echo "Status: ${{ env.STATUS }}"
-          echo "Message: ${{ env.MESSAGE }}"
+          echo "Status: ${{ env.status }}"
+          echo "Message: ${{ env.message }}"
           if [[ "${{ env.status }}" == "success" ]]; then
             exit 0  # Exit with success code
           else
