@@ -1,0 +1,32 @@
+name: Check Pull Request Flags
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  check_flags:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Read pull request body
+        id: read-body
+        run: |
+          echo "PR_BODY=${{ github.event.pull_request.body }}" >> $GITHUB_ENV
+
+      - name: Check if YES or NO is checked
+        id: check-flags
+        run: |
+          body="${{ env.PR_BODY }}"
+          echo "Pull request body:"
+          echo "$body"
+          if [[ "$body" =~ \[\s*[xX]\s*\]\s*YES || "$body" =~ \[\s*[xX]\s*\]\s*NO ]]; then
+            echo "At least one checkbox (YES or NO) is checked."
+            exit 0
+          else
+            echo "Neither YES nor NO checkbox is checked."
+            exit 1
+          fi
