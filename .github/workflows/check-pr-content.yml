@@ -1,4 +1,4 @@
-name: Check PR for Screenshot or Video
+name: Check PR for Screenshot, Video, and Specific Checkboxes
 
 on:
   pull_request:
@@ -8,23 +8,44 @@ jobs:
   check-pr-content:
     runs-on: ubuntu-latest
 
+    env:
+      status: "success"
+      message: "PR includes a screenshot or video and at least one specific checkbox is checked in the description."
+
     steps:
-      - name: Check PR for image or video
+      - name: Check for Smartling label
+        id: check-labels
+        env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels) }}
+        run: |
+          echo "PR Labels: $PR_LABELS"
+          if echo "$PR_LABELS" | grep -q '"name": "smartling"'; then
+            echo "status=success" >> $GITHUB_ENV
+            echo "message=Skipped image, video, and checkbox check due to 'smartling' label." >> $GITHUB_ENV
+            exit 0  # Exit with success code if 'smartling' label is present
+          fi
+
+      - name: Check PR for image, video, and specific checkboxes
         id: check-content
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           echo "PR Body: $PR_BODY"
 
-          imageRegex="!\[.*\]\(.*\)|<img .*src=.*>"
-          videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
+          imageRegex="!\[[^\]]*\]\((?:[^\)]+)\)|<img [^>]*src=\"[^\"]+\"[^>]*>"
+          videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video [^>]*src=\"[^\"]+\"[^>]*>)"
+          checkboxRegex1="- \[ \] Task 1"
+          checkboxRegex2="- \[ \] Task 2"
+
+          task1_checked=$(echo "$PR_BODY" | grep -c "$checkboxRegex1")
+          task2_checked=$(echo "$PR_BODY" | grep -c "$checkboxRegex2")
 
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-          else
-            echo "status=success" >> $GITHUB_ENV
-            echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
+          elif [[ $task1_checked -eq 0 && $task2_checked -eq 0 ]]; then
+            echo "status=failure" >> $GITHUB_ENV
+            echo "message=Please ensure at least one specific checkbox is checked in the PR description." >> $GITHUB_ENV
           fi
 
       - name: Echo status
