@@ -2,7 +2,7 @@ name: Check Pull Request Flags
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, edited, synchronize, ready_for_review, labeled, unlabeled]
 
 jobs:
   check_flags:
