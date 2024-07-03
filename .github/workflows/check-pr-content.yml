@@ -34,11 +34,11 @@ jobs:
 
           imageRegex="!\[[^\]]*\]\((?:[^\)]+)\)|<img [^>]*src=\"[^\"]+\"[^>]*>"
           videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video [^>]*src=\"[^\"]+\"[^>]*>)"
-          checkboxRegex1="- \[ \] YES"
+          checkboxRegex1="- \[ \] YES:"
           checkboxRegex2="- \[ \] NO"
 
-          task1_checked=$(echo "$PR_BODY" | grep -c "$checkboxRegex1")
-          task2_checked=$(echo "$PR_BODY" | grep -c "$checkboxRegex2")
+          task1_checked=$(echo "$PR_BODY" | grep -cE "$checkboxRegex1")
+          task2_checked=$(echo "$PR_BODY" | grep -cE "$checkboxRegex2")
 
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
             echo "status=failure" >> $GITHUB_ENV
