@@ -8,10 +8,6 @@ jobs:
   check-pr-content:
     runs-on: ubuntu-latest
 
-    env:
-      status: "success"
-      message: "PR includes a screenshot or video and at least one specific checkbox is checked in the description."
-
     steps:
       - name: Check for Smartling label
         id: check-labels
@@ -30,19 +26,25 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          echo "PR Body: $PR_BODY"
+          echo "Debug: PR Body: '$PR_BODY'"
 
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
           videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
-          # Updated regex to handle spaces around the x
-          checkboxRegex1="^- \\[ *[xX] *\\] *YES.*"
-          checkboxRegex2="^- \\[ *[xX] *\\] *NO.*"
+          # Updated regex to handle spaces around the x or X
+          checkboxRegexYes="^- \\[ *[xX] *\\] *YES.*"
+          checkboxRegexNo="^- \\[ *[xX] *\\] *NO.*"
 
-          hasYes=$(echo "$PR_BODY" | grep -cE "$checkboxRegex1")
-          hasNo=$(echo "$PR_BODY" | grep -cE "$checkboxRegex2")
+          hasYes=$(echo "$PR_BODY" | grep -cE "$checkboxRegexYes")
+          hasNo=$(echo "$PR_BODY" | grep -cE "$checkboxRegexNo")
 
-          if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
+          echo "Debug: hasYes=$hasYes"
+          echo "Debug: hasNo=$hasNo"
+
+          if [[ -z "${PR_BODY// }" ]]; then
+            echo "status=failure" >> $GITHUB_ENV
+            echo "message=PR body is empty. Please include a screenshot or video and check either 'YES' or 'NO' checkbox in the PR description." >> $GITHUB_ENV
+          elif ! echo "$PR_BODY" | grep -qE "$imageRegex" && ! echo "$PR_BODY" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
           elif [[ $hasYes -gt 0 || $hasNo -gt 0 ]]; then
