@@ -14,10 +14,11 @@ jobs:
 
       - name: Check if YES or NO is checked
         run: |
-          body="${{ github.event.pull_request.body }}"
+          # Safely handle multiline and special characters
+          body=$(echo "${{ github.event.pull_request.body }}" | tr -d '\r')
           echo "Pull request body:"
           echo "$body"
-          # Use extended regex to match across multiple lines and with various spaces
+          # Check for checked YES or NO checkboxes
           if echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*YES'; then
             echo "YES is checked."
             exit 0
@@ -28,3 +29,4 @@ jobs:
             echo "Neither YES nor NO checkbox is checked."
             exit 1
           fi
+        shell: bash
