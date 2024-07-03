@@ -32,8 +32,9 @@ jobs:
         run: |
           echo "PR Body: $PR_BODY"
 
-          imageRegex="!\[[^\]]*\]\((?:[^\)]+)\)|<img [^>]*src=\"[^\"]+\"[^>]*>"
-          videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video [^>]*src=\"[^\"]+\"[^>]*>)"
+           const imageRegex = /!\[.*\]\(.*\)|<img .*src=.*>/; // Markdown or HTML image
+           const videoRegex = /(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>)/i; // Video URL or HTML video
+
           checkboxRegex1="- \[ \] YES:"
           checkboxRegex2="- \[ \] NO"
 
