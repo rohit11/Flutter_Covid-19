@@ -30,24 +30,24 @@ jobs:
       - name: Set outputs
         id: set-outputs
         run: |
-          echo "Status: $status"
-          echo "Message: $message"
+          echo "Status: "$status""
+          echo "Message: "$message""
           echo "STATUS=$status" >> $GITHUB_ENV
           echo "MESSAGE=$message" >> $GITHUB_ENV
 
       - name: Finalize status
         if: always()
         run: |
-          echo "Final Status: $status"
-          echo "Final Message: $message"
+          echo "Final Status: "$status""
+          echo "Final Message: "$message""
           echo "STATUS=$status" >> $GITHUB_ENV
           echo "MESSAGE=$message" >> $GITHUB_ENV
 
       - name: Echo status
         if: always()
         run: |
-          echo "Status: $STATUS"
-          echo "Message: $MESSAGE"
+          echo "Status: "$STATUS""
+          echo "Message: "$MESSAGE""
           if [[ "$status" == "success" ]]; then
             exit 0  # Exit with success code
           else
