@@ -2,7 +2,7 @@ name: Check PR for Screenshot, Video, and Specific Checkboxes
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, ready_for_review]
+    types: [opened, edited, synchronize, ready_for_review, labeled, unlabeled]
 
 jobs:
   check-pr-content:
