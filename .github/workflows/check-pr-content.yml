@@ -1,4 +1,4 @@
-name: Check PR for Screenshot or Video
+name: Check Pull Request Content
 
 on:
   pull_request:
@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Check for Smartling label
         id: check-labels
         env:
@@ -38,7 +41,7 @@ jobs:
           
           echo "PR_BODY_NORMALIZED=$PR_BODY_NORMALIZED" >> $GITHUB_ENV
 
-      - name: Check PR for image or video
+      - name: Check PR for image, video, YES or NO
         id: check-content
         if: env.status == 'continue'
         env:
@@ -47,15 +50,21 @@ jobs:
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
           videoRegex="https?://.*\\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
+          body=$(echo "${{ github.event.pull_request.body }}" | tr -d '\r')
+          echo "Debug: PR Body: '$body'"
+          
           if [[ -z "${PR_BODY_NORMALIZED// }" ]]; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=PR body is empty. Please include a screenshot or video in the PR description." >> $GITHUB_ENV
           elif ! echo "$PR_BODY_NORMALIZED" | grep -qE "$imageRegex" && ! echo "$PR_BODY_NORMALIZED" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
+          elif ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*YES'; then
+            echo "status=failure" >> $GITHUB_ENV
+            echo "message=Please check 'YES' checkbox in the PR description." >> $GITHUB_ENV
           else
             echo "status=success" >> $GITHUB_ENV
-            echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
+            echo "message=PR includes a screenshot or video and 'YES' checkbox in the description." >> $GITHUB_ENV
           fi
 
       - name: Echo status
