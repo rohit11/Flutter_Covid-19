@@ -41,6 +41,7 @@ jobs:
           elif ! echo "$PR_BODY" | grep -qE "$imageRegex" && ! echo "$PR_BODY" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
+          fi
          
 
       - name: Echo status
