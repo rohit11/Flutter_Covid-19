@@ -20,17 +20,23 @@ jobs:
           videoRegex="(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*)"
 
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
-            echo "::set-output name=status::failure"
-            echo "::set-output name=message::Please include a screenshot or video in the PR description."
+            echo "status=failure" >> $GITHUB_ENV
+            echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
           else
-            echo "::set-output name=status::success"
-            echo "::set-output name=message::PR includes a screenshot or video in the description."
+            echo "status=success" >> $GITHUB_ENV
+            echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
           fi
 
       - name: Set outputs
         id: set-outputs
         run: |
-          echo "Status: ${{ steps.check-content.outputs.status }}"
-          echo "Message: ${{ steps.check-content.outputs.message }}"
-          echo "::set-output name=status::${{ steps.check-content.outputs.status }}"
-          echo "::set-output name=message::${{ steps.check-content.outputs.message }}"
+          echo "Status: ${{ env.status }}"
+          echo "Message: ${{ env.message }}"
+          echo "::set-env name=STATUS::${{ env.status }}"
+          echo "::set-env name=MESSAGE::${{ env.message }}"
+
+      - name: Finalize status
+        if: always()
+        run: |
+          echo "::set-env name=STATUS::${{ env.status }}"
+          echo "::set-env name=MESSAGE::${{ env.message }}"
