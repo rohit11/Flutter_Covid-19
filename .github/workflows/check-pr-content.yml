@@ -22,11 +22,9 @@ jobs:
           if [[ -z "${PR_BODY// }" || ! "$PR_BODY" =~ $imageRegex && ! "$PR_BODY" =~ $videoRegex ]]; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-            exit 1  # Exit with failure code
           else
             echo "status=success" >> $GITHUB_ENV
             echo "message=PR includes a screenshot or video in the description." >> $GITHUB_ENV
-            exit 0  # Exit with success code
           fi
 
       - name: Set outputs
