@@ -17,10 +17,7 @@ jobs:
         env:
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels) }}
         run: |
-          echo "Debug: PR Labels: $PR_LABELS"
-          
           LABEL_FOUND=$(echo "$PR_LABELS" | grep -o '"name": *"smartling"' | awk -F': ' '{print $2}' | sed 's/"//g')
-          echo "Debug: LABEL_FOUND: $LABEL_FOUND"
           
           if [ "$LABEL_FOUND" == "smartling" ]; then
             echo "status=success" >> $GITHUB_ENV
@@ -34,11 +31,7 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          echo "Debug: PR Body Original: '$PR_BODY'"
-          
           PR_BODY_NORMALIZED=$(echo "$PR_BODY" | tr -d '\r\n' | sed 's/[[:space:]]\+/ /g')
-          echo "Debug: PR Body Normalized: '$PR_BODY_NORMALIZED'"
-          
           echo "PR_BODY_NORMALIZED=$PR_BODY_NORMALIZED" >> $GITHUB_ENV
 
       - name: Check PR for image, video, YES or NO
@@ -51,7 +44,6 @@ jobs:
           videoRegex="(https?://.*\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|https?://github\.com/[^/\s]+/[^/\s]+/assets/[^/\s]+/\w+|<video .*src=.*)"
 
           body=$(echo "${{ github.event.pull_request.body }}" | tr -d '\r')
-          echo "Debug: PR Body: '$body'"
           
           if [[ -z "${PR_BODY_NORMALIZED// }" ]]; then
             echo "status=failure" >> $GITHUB_ENV
