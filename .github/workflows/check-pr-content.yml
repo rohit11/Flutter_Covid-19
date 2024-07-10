@@ -12,6 +12,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Set default values
+        run: |
+          echo "status=continue" >> $GITHUB_ENV
+          echo "message=" >> $GITHUB_ENV
+
       - name: Check for Smartling label
         id: check-labels
         env:
@@ -24,7 +29,6 @@ jobs:
             echo "message=Skipped image or video check due to 'smartling' label." >> $GITHUB_ENV
             exit 0
           fi
-          echo "status=continue" >> $GITHUB_ENV
 
       - name: Normalize PR Body
         id: normalize-pr-body
@@ -34,6 +38,20 @@ jobs:
           PR_BODY_NORMALIZED=$(echo "$PR_BODY" | tr -d '\r\n' | sed 's/[[:space:]]\+/ /g')
           echo "PR_BODY_NORMALIZED=$PR_BODY_NORMALIZED" >> $GITHUB_ENV
 
+      - name: Check number of files and lines changed
+        id: check-changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | wc -l)
+          LINE_ADDITIONS=$(git diff --numstat ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | awk '{sum += $1} END {print sum}')
+          LINE_DELETIONS=$(git diff --numstat ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | awk '{sum += $2} END {print sum}')
+          TOTAL_LINES=$((LINE_ADDITIONS + LINE_DELETIONS))
+
+          if [ "$CHANGED_FILES" -le 3 ] && [ "$TOTAL_LINES" -le 10 ]; then
+            echo "status=success" >> $GITHUB_ENV
+            echo "message=Skipped content check due to small number of changes." >> $GITHUB_ENV
+            exit 0
+          fi
+
       - name: Check PR for image, video, YES or NO
         id: check-content
         if: env.status == 'continue'
@@ -41,17 +59,17 @@ jobs:
           PR_BODY_NORMALIZED: ${{ env.PR_BODY_NORMALIZED }}
         run: |
           imageRegex="!\\[.*\\]\\(.*\\)|<img .*src=.*>"
-          videoRegex="(https?://.*\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|https?://github\.com/[^/\s]+/[^/\s]+/assets/[^/\s]+/\w+|<video .*src=.*)"
+          videoRegex="https://github.com/.*/.*/assets/.*|https?://.*\.(mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>"
 
           body=$(echo "${{ github.event.pull_request.body }}" | tr -d '\r')
-          
+
           if [[ -z "${PR_BODY_NORMALIZED// }" ]]; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=PR body is empty. Please include a screenshot or video in the PR description." >> $GITHUB_ENV
           elif ! echo "$PR_BODY_NORMALIZED" | grep -qE "$imageRegex" && ! echo "$PR_BODY_NORMALIZED" | grep -qE "$videoRegex"; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please include a screenshot or video in the PR description." >> $GITHUB_ENV
-          elif ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*YES\s*$' && ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*NO\s*$'; then
+          elif ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*YES\b' && ! echo "$body" | grep -iq '\[\s*[xX]\s*\]\s*NO\b'; then
             echo "status=failure" >> $GITHUB_ENV
             echo "message=Please check either 'YES' or 'NO' checkbox in the PR description." >> $GITHUB_ENV
           else
@@ -68,4 +86,3 @@ jobs:
             exit 0
           else
             exit 1
-          fi
