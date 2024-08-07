@@ -1,35 +1,37 @@
-```
-name: Check PR for Screenshot or Video
+# Feature Flags
 
-on:
-  pull_request:
-    branches: '**'  # Apply to pull requests targeting any branch
-    types: [opened, edited, synchronize, ready_for_review]
+This repository maintains the feature flags for each release in JSON format. Feature flags are separated by lines of business, with common features applied globally.
 
-jobs:
-  check-pr-content:
-    runs-on: ubuntu-latest
+## Current Release
 
-    steps:
-    - name: Check PR for image or video
-      uses: actions/github-script@v6
-      with:
-        script: |
-          // Extract PR description
-          const prBody = context.payload.pull_request.body;
+- [Feature Flags JSON](feature-flags/feature-flags.json)
 
-          // Regex patterns for images and videos
-          const imageRegex = /!\[.*\]\(.*\)|<img .*src=.*>/; // Markdown or HTML image
-          const videoRegex = /(https?:\/\/.*\.(?:mp4|mov|avi|wmv|flv|mkv|webm|ogg)|<video .*src=.*>)/i; // Video URL or HTML video
+## JSON Structure
 
-          // Check if PR description includes images or videos
-          if (!imageRegex.test(prBody) && !videoRegex.test(prBody)) {
-            // Add a comment to the PR if no images or videos are found
-            const issueComment = context.issue({
-              body: 'Please include a screenshot or video in the PR description.',
-            });
-            return github.issues.createComment(issueComment);
-          }
+Each JSON file contains the feature flags for the corresponding release. The structure of the JSON file is as follows:
 
-
-```
+```json
+{
+  "version": "1.0.0",
+  "releaseDate": "2024-08-05",
+  "common": {
+  },
+  "MNR": {
+    "EnableFeatureX": false
+  },
+  "CNS": {
+    "EnableFeatureY": true
+  },
+  "ENI": {
+    "EnableFeatureZ": true
+  },
+  "IFP": {
+    "EnableFeatureA": false
+  },
+  "USP": {
+    "EnableFeatureB": true
+  },
+  "UNET": {
+    "EnableFeatureC": false
+  }
+}
